@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { getShopSettings } from "@/lib/shop-settings";
+import { computeProductInStock } from "@/lib/stock";
 
 function slugify(text: string) {
   return text
@@ -98,7 +99,7 @@ export async function createProduct(formData: FormData) {
       reference,
       slug,
       status: "DRAFT",
-      inStock: finalVariants.some((v) => v.stock > 0),
+      inStock: computeProductInStock(finalVariants.map((v) => v.stock)),
       variants: {
         create: finalVariants.map((v, i) => ({
           sku: `${reference}-${i + 1}`,

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { canTransition } from "@/lib/orders";
+import { computeProductInStock, findStockShortages } from "@/lib/stock";
 import type { OrderStatus, Prisma } from "@/generated/prisma/client";
 
 export type ChangeStatusState = { error: string | null };
@@ -11,7 +12,7 @@ export type ChangeStatusState = { error: string | null };
 async function recomputeInStock(tx: Prisma.TransactionClient, productIds: Iterable<string>) {
   for (const productId of productIds) {
     const variants = await tx.variant.findMany({ where: { productId, isActive: true }, select: { stock: true } });
-    const inStock = variants.some((v) => v.stock > 0);
+    const inStock = computeProductInStock(variants.map((v) => v.stock));
     await tx.product.update({ where: { id: productId }, data: { inStock } });
   }
 }
@@ -38,7 +39,7 @@ export async function changeOrderStatus(orderId: string, newStatus: OrderStatus)
       }
 
       if (newStatus === "CONFIRMED") {
-        const shortages = order.items.filter((item) => item.variant.stock < item.quantity);
+        const shortages = findStockShortages(order.items.map((item) => ({ ...item, stock: item.variant.stock })));
         if (shortages.length > 0) {
           throw new Error(
             `Stock insuffisant : ${shortages

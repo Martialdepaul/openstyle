@@ -1,16 +1,14 @@
 import type { PriceTier } from "@/generated/prisma/client";
-import { getShopSettings } from "@/lib/shop-settings";
 
-/** RG-02 : seuils par défaut, utilisés tant que F22 n'a rien enregistré de différent. */
+/**
+ * RG-02 : seuils par défaut, utilisés tant que F22 n'a rien enregistré de
+ * différent. Les seuils réels (réglables, F22) viennent de
+ * `lib/tier-thresholds.ts` — ce fichier reste sans dépendance à Prisma pour
+ * rester testable en isolation (voir `lib/pricing.test.ts`).
+ */
 export const TIER_THRESHOLDS = { semiWholesale: 10, wholesale: 20 } as const;
 
 export type TierThresholds = { semiWholesale: number; wholesale: number };
-
-/** F22 : seuils réels, réglables par la gérante. */
-export async function getTierThresholds(): Promise<TierThresholds> {
-  const settings = await getShopSettings();
-  return { semiWholesale: settings.tierSemiWholesaleQty, wholesale: settings.tierWholesaleQty };
-}
 
 export type TieredProduct = {
   priceRetail: number;

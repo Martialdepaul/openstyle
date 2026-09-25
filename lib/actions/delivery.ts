@@ -1,7 +1,9 @@
 "use server";
 
-import { availableDeliveryMethods, deliveryFee, findZoneForCity } from "@/lib/delivery";
-import { effectiveTier, getTierThresholds, tierForQuantity } from "@/lib/pricing";
+import { availableDeliveryMethods, deliveryFee } from "@/lib/delivery";
+import { findZoneForCity } from "@/lib/delivery-zones";
+import { effectiveTier, tierForQuantity } from "@/lib/pricing";
+import { getTierThresholds } from "@/lib/tier-thresholds";
 import type { DeliveryMethod } from "@/generated/prisma/client";
 
 export type DeliveryEstimate = { methods: DeliveryMethod[]; fee: number };

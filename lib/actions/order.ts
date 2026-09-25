@@ -5,9 +5,12 @@ import { redirect } from "@/i18n/navigation";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { CartLine } from "@/lib/cart-store";
-import { effectiveTier, getTierThresholds, tierForQuantity, unitPrice } from "@/lib/pricing";
-import { availableDeliveryMethods, deliveryFee, findZoneForCity } from "@/lib/delivery";
-import { generateOrderNumber, isValidCameroonPhone, normalizeCameroonPhone } from "@/lib/orders";
+import { effectiveTier, tierForQuantity, unitPrice } from "@/lib/pricing";
+import { getTierThresholds } from "@/lib/tier-thresholds";
+import { availableDeliveryMethods, deliveryFee } from "@/lib/delivery";
+import { findZoneForCity } from "@/lib/delivery-zones";
+import { isValidCameroonPhone, normalizeCameroonPhone } from "@/lib/orders";
+import { generateOrderNumber } from "@/lib/order-number";
 import type { DeliveryMethod } from "@/generated/prisma/client";
 
 export type CheckoutState = { error: string | null; problemSlugs?: string[] };

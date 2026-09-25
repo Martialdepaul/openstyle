@@ -210,6 +210,24 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Impact.** F23 fait.
 
+## Tests unitaires (section 0.6)
+
+**Constat.** La consigne 0.6 exige des tests unitaires sur quatre sujets précis (prix par palier, frais de livraison, décompte du stock, transitions de statut) ; jusqu'ici tout avait été vérifié manuellement (build + navigation), sans suite de tests réelle.
+
+**Décision.**
+
+- Vitest ajouté (`pnpm test`, `vitest.config.ts`, alias `@/` aligné sur `tsconfig.json`). Choix naturel pour un projet TypeScript strict + ESM, sans dépendance à un framework de test déjà en place.
+- **Nouveau fichier `lib/stock.ts`** : `findStockShortages` (RG-10) et `computeProductInStock` (RG-26) étaient dupliquées telles quelles dans trois endroits (`lib/actions/order-status.ts`, `lib/actions/stock.ts`, `lib/actions/product-create.ts`) — consolidées ici et réutilisées partout, ce qui les rend aussi testables en isolation.
+- **Séparation "calcul pur" / "accès base"**, nécessaire pour que les quatre sujets soient testables sans base de données ni variables d'environnement :
+  - `lib/pricing.ts` reste pur ; `getTierThresholds()` (qui lit le réglage F22 via Prisma) déménage dans `lib/tier-thresholds.ts`.
+  - `lib/delivery.ts` reste pur (`availableDeliveryMethods`, `deliveryFee`) ; `findZoneForCity` (requête Prisma) déménage dans `lib/delivery-zones.ts`.
+  - `lib/orders.ts` reste pur (`canTransition`, validation de téléphone) ; `generateOrderNumber` (requête Prisma) déménage dans `lib/order-number.ts`.
+  - Ce découpage reproduit celui déjà fait pour `lib/whatsapp.ts`/`lib/shop-settings.ts` (F22) : sans lui, importer une seule fonction pure aurait aussi chargé Prisma/`pg` au démarrage des tests.
+- Tests écrits : `lib/pricing.test.ts`, `lib/delivery.test.ts`, `lib/stock.test.ts`, `lib/orders.test.ts` — chacun couvre les règles de gestion citées en commentaire (RG-01 à RG-05, RG-09, RG-10, RG-18, RG-19, RG-26).
+- **Tests Playwright (parcours commande invité/pro, création produit admin)** : la consigne dit qu'ils "suffisent" pour le reste, contrairement aux quatre sujets ci-dessus qui sont "obligatoires". Non faits dans ce lot, faute de temps ; à prioriser ensuite si la cliente veut une couverture de bout en bout.
+
+**Impact.** Les quatre sujets obligatoires de la section 0.6 sont couverts. Reste : tests Playwright (recommandés, pas obligatoires selon le texte), et étendre les tests unitaires si de nouvelles règles de calcul apparaissent.
+
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
 **Constat.** Le design affiche une grille de 6 photos sous un bloc "Suivez-nous — @openstyle_cm". Le cahier des charges (F02) ne mentionne pas ce bloc parmi ceux à afficher.

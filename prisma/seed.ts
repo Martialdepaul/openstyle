@@ -3,7 +3,8 @@ import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 import { effectiveTier, tierForQuantity, unitPrice } from "../lib/pricing";
-import { availableDeliveryMethods, deliveryFee, findZoneForCity } from "../lib/delivery";
+import { availableDeliveryMethods, deliveryFee } from "../lib/delivery";
+import { findZoneForCity } from "../lib/delivery-zones";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
