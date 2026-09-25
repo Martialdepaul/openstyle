@@ -188,6 +188,20 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Impact.** F22 fait. Reste hors de ce lot : historique des modifications de réglages (pas demandé par le texte), validation plus fine des URLs de réseaux sociaux.
 
+## Équipe et journal (F12, reste)
+
+**Constat.** `/admin/equipe` et `/admin/journal` étaient déjà annoncés dans le menu admin (`lib/admin-nav.ts`) mais renvoyaient un 404, faute d'écran construit. F12 exige aussi "impossible de désactiver le dernier OWNER", ce qui suppose un statut actif/inactif inexistant sur `User` (seul le rôle existait).
+
+**Décision.**
+
+- Migration additive `20260925215103_add_user_is_active` : `User.isActive Boolean @default(true)`. Colonne avec valeur par défaut, aucune donnée existante affectée ; appliquée directement à la base Neon partagée dev/prod (voir la mise en garde plus haut sur cette base commune).
+- `lib/auth.ts` : un compte désactivé (`isActive = false`) ne peut plus se connecter (traité comme un mot de passe invalide, sans révéler la raison).
+- `/admin/equipe` (`lib/actions/team.ts`), réservé à l'OWNER : création de compte OWNER/MANAGER (mot de passe aléatoire jamais transmis, un lien de réinitialisation est journalisé côté serveur à la place d'un envoi par e-mail — Resend non branché, même limite que F08), changement de rôle, activation/désactivation, envoi d'un lien de réinitialisation à la demande. Un OWNER ne peut pas se désactiver lui-même ni retirer/désactiver le dernier OWNER actif (vérifié côté serveur, pas seulement caché dans l'interface).
+- **Limite acceptée** : le lien de réinitialisation envoyé depuis l'équipe pointe vers la page publique `/[locale]/reinitialiser-mot-de-passe/[token]` (mécanisme partagé avec F08), qui redirige ensuite vers `/connexion` (espace client) plutôt que `/admin/login`. Le mot de passe est bien mis à jour ; seul le renvoi post-soumission est celui du client, pas de l'admin. À corriger si gênant en pratique (redirection conditionnelle au rôle).
+- `/admin/journal` (F12, S) : liste paginée de `AdminLog` (auteur, action, entité concernée), les 9 types d'action existants (exports, décisions pro, création/désactivation/changement de rôle d'un compte admin) traduits en français. Lecture seule, réservé à l'OWNER.
+
+**Impact.** F12 fait. Reste hors de ce lot : redirection post-réinitialisation consciente du rôle, e-mails F08/F09/F12 réels une fois Resend branché.
+
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
 **Constat.** Le design affiche une grille de 6 photos sous un bloc "Suivez-nous — @openstyle_cm". Le cahier des charges (F02) ne mentionne pas ce bloc parmi ceux à afficher.

@@ -62,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (isLockedOut(email)) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
+        if (!user || !user.isActive) {
           registerFailedAttempt(email);
           return null;
         }

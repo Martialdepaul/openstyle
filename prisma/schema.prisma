@@ -80,6 +80,7 @@ model User {
   lastName       String
   phone          String?
   role           Role            @default(CUSTOMER)
+  isActive       Boolean         @default(true)
   proStatus      ProStatus       @default(NONE)
   shopName       String?
   proCity        String?
@@ -305,7 +306,7 @@ model AdminLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  action    String // EXPORT_ORDERS, EXPORT_CUSTOMERS, PRO_APPROVED, PRO_REJECTED, ADMIN_CREATED, ROLE_CHANGED
+  action    String // EXPORT_ORDERS, EXPORT_CUSTOMERS, PRO_APPROVED, PRO_REJECTED, PRO_REVERTED, ADMIN_CREATED, ROLE_CHANGED, ADMIN_DEACTIVATED, ADMIN_REACTIVATED
   entity    String?
   entityId  String?
   createdAt DateTime @default(now())
