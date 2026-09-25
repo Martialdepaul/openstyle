@@ -5,7 +5,7 @@ import { redirect } from "@/i18n/navigation";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { CartLine } from "@/lib/cart-store";
-import { effectiveTier, tierForQuantity, unitPrice } from "@/lib/pricing";
+import { effectiveTier, getTierThresholds, tierForQuantity, unitPrice } from "@/lib/pricing";
 import { availableDeliveryMethods, deliveryFee, findZoneForCity } from "@/lib/delivery";
 import { generateOrderNumber, isValidCameroonPhone, normalizeCameroonPhone } from "@/lib/orders";
 import type { DeliveryMethod } from "@/generated/prisma/client";
@@ -135,7 +135,7 @@ export async function createOrder(_prevState: CheckoutState, formData: FormData)
   const customer = isCustomerLoggedIn ? await prisma.user.findUnique({ where: { id: session!.user.id } }) : null;
 
   const totalQuantity = cartLines.reduce((sum, line) => sum + line.quantity, 0);
-  const tier = effectiveTier(tierForQuantity(totalQuantity), customer?.proStatus === "APPROVED");
+  const tier = effectiveTier(tierForQuantity(totalQuantity, await getTierThresholds()), customer?.proStatus === "APPROVED");
 
   const items = resolvedLines.map(({ line, product, variant }) => {
     const price = unitPrice(product!, tier);

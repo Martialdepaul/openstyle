@@ -38,6 +38,8 @@ export async function updateDeliveryDelayText(formData: FormData): Promise<void>
   await setSetting("deliveryDelayText", text);
 
   revalidatePath("/admin/livraison");
+  revalidatePath("/admin/parametres");
+  revalidatePath("/", "layout");
 }
 
 export async function createRelayPoint(formData: FormData) {

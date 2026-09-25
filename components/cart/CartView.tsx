@@ -8,9 +8,9 @@ import { useCartStore } from "@/lib/cart-store";
 import { formatPriceFcfa } from "@/lib/currency";
 import { localizedText } from "@/lib/i18n-helpers";
 import { resolveCartLines, type ResolvedCartLine } from "@/lib/actions/cart";
-import { whatsAppLink } from "@/lib/shop-info";
+import { whatsAppLink } from "@/lib/whatsapp";
 
-export default function CartView() {
+export default function CartView({ whatsappNumber }: { whatsappNumber: string }) {
   const t = useTranslations("Cart");
   const locale = useLocale();
   const { lines, updateQuantity, removeLine } = useCartStore();
@@ -156,7 +156,7 @@ export default function CartView() {
 
           {unavailableLines.length === 0 && (
             <a
-              href={whatsAppLink(whatsappMessage)}
+              href={whatsAppLink(whatsappNumber, whatsappMessage)}
               target="_blank"
               rel="noreferrer"
               className="mt-3 flex w-full items-center justify-center gap-2 border border-[#25D366] py-3 text-sm font-semibold text-[#25D366] transition hover:bg-[#25D366] hover:text-white"

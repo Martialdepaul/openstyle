@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import PageBody from "@/components/content/PageBody";
 import { getPageContent } from "@/lib/pages";
 import { localizedText } from "@/lib/i18n-helpers";
-import { shopInfo, whatsAppLink } from "@/lib/shop-info";
+import { getShopSettings, whatsAppLink } from "@/lib/shop-settings";
 
 const SLUG = "contact";
 
@@ -25,7 +25,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
   setRequestLocale(locale);
   const t = await getTranslations("ContentPages.contact");
 
-  const page = await getPageContent(SLUG);
+  const [page, settings] = await Promise.all([getPageContent(SLUG), getShopSettings()]);
   if (!page) notFound();
 
   return (
@@ -38,17 +38,17 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       <dl className="mt-8 space-y-3 border-t border-os-gray pt-6 text-sm">
         <div className="flex gap-2">
           <dt className="font-semibold">{t("addressLabel")} :</dt>
-          <dd className="text-os-muted">{shopInfo.address}</dd>
+          <dd className="text-os-muted">{settings.address}</dd>
         </div>
         <div className="flex gap-2">
           <dt className="font-semibold">{t("hoursLabel")} :</dt>
-          <dd className="text-os-muted">{shopInfo.hours}</dd>
+          <dd className="text-os-muted">{settings.hours}</dd>
         </div>
       </dl>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <a
-          href={whatsAppLink(t("whatsappMessage"))}
+          href={whatsAppLink(settings.whatsappNumber, t("whatsappMessage"))}
           target="_blank"
           rel="noreferrer"
           className="btn-press flex flex-1 items-center justify-center gap-2 bg-[#25D366] px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
@@ -56,7 +56,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
           {t("whatsappCta")}
         </a>
         <a
-          href={`tel:${shopInfo.phoneNumber}`}
+          href={`tel:${settings.phoneNumber}`}
           className="btn-press flex flex-1 items-center justify-center gap-2 border border-os-gray px-6 py-4 text-sm font-semibold uppercase tracking-widest transition hover:border-os-black"
         >
           {t("callCta")}

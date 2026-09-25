@@ -1,7 +1,16 @@
 import type { PriceTier } from "@/generated/prisma/client";
+import { getShopSettings } from "@/lib/shop-settings";
 
-/** RG-02 : seuils par défaut. Deviendront des réglages `Setting` avec F22. */
+/** RG-02 : seuils par défaut, utilisés tant que F22 n'a rien enregistré de différent. */
 export const TIER_THRESHOLDS = { semiWholesale: 10, wholesale: 20 } as const;
+
+export type TierThresholds = { semiWholesale: number; wholesale: number };
+
+/** F22 : seuils réels, réglables par la gérante. */
+export async function getTierThresholds(): Promise<TierThresholds> {
+  const settings = await getShopSettings();
+  return { semiWholesale: settings.tierSemiWholesaleQty, wholesale: settings.tierWholesaleQty };
+}
 
 export type TieredProduct = {
   priceRetail: number;
@@ -11,9 +20,9 @@ export type TieredProduct = {
 };
 
 /** RG-02 : le palier dépend du nombre total de pièces du panier, tous produits confondus. */
-export function tierForQuantity(totalQuantity: number): PriceTier {
-  if (totalQuantity >= TIER_THRESHOLDS.wholesale) return "WHOLESALE";
-  if (totalQuantity >= TIER_THRESHOLDS.semiWholesale) return "SEMI_WHOLESALE";
+export function tierForQuantity(totalQuantity: number, thresholds: TierThresholds = TIER_THRESHOLDS): PriceTier {
+  if (totalQuantity >= thresholds.wholesale) return "WHOLESALE";
+  if (totalQuantity >= thresholds.semiWholesale) return "SEMI_WHOLESALE";
   return "RETAIL";
 }
 

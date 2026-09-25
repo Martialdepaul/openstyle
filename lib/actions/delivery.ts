@@ -1,7 +1,7 @@
 "use server";
 
 import { availableDeliveryMethods, deliveryFee, findZoneForCity } from "@/lib/delivery";
-import { effectiveTier, tierForQuantity } from "@/lib/pricing";
+import { effectiveTier, getTierThresholds, tierForQuantity } from "@/lib/pricing";
 import type { DeliveryMethod } from "@/generated/prisma/client";
 
 export type DeliveryEstimate = { methods: DeliveryMethod[]; fee: number };
@@ -15,7 +15,7 @@ export async function estimateDelivery(city: string, method: DeliveryMethod, tot
   const methods = availableDeliveryMethods(city);
   if (!methods.includes(method)) return { methods, fee: 0 };
 
-  const tier = effectiveTier(tierForQuantity(totalQuantity), false);
+  const tier = effectiveTier(tierForQuantity(totalQuantity, await getTierThresholds()), false);
   const zone = method === "PICKUP" ? null : await findZoneForCity(city);
   return { methods, fee: deliveryFee(method, zone, tier) };
 }

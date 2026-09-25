@@ -174,6 +174,20 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Impact.** La base de données de développement local et celle utilisée par Vercel sont désormais la même instance Neon (aucune base locale distincte) — toute donnée de test ajoutée en local (y compris via le seed) est visible en production tant qu'une base dédiée par environnement n'est pas mise en place.
 
+## Paramètres de la boutique (F22)
+
+**Constat.** Les coordonnées de la boutique (numéro WhatsApp, téléphone, adresse, horaires, e-mail, liens sociaux) et les seuils de paliers/stock bas étaient codés en dur dans `lib/shop-info.ts` et `lib/pricing.ts`, en attendant ce lot.
+
+**Décision.**
+
+- `lib/shop-info.ts` est retiré. `lib/shop-settings.ts` porte désormais un seul réglage `Setting` (clé `shopSettings`, un objet JSON) avec toutes les valeurs de coordonnées + les seuils de paliers (RG-02) + le seuil de stock bas par défaut appliqué aux nouvelles variantes (RG-24). `getShopSettings()` fusionne les valeurs enregistrées avec des valeurs par défaut (les anciennes valeurs codées en dur), pour rester robuste si un champ est ajouté plus tard sans avoir encore été enregistré.
+- `/admin/parametres` (déjà présent dans le menu, jusque-là 404) : formulaire unique, réservé à l'OWNER (section 4). Le texte du délai de livraison (`deliveryDelayText`, F20) y est aussi éditable, en plus de `/admin/livraison` — les deux écrans modifient le même réglage, aucune duplication de donnée.
+- `lib/pricing.ts` : `tierForQuantity` reste une fonction pure et synchrone (aucun autre fichier ne doit recalculer un prix par palier), mais accepte désormais des seuils en paramètre (`getTierThresholds()`, async, lit `shopSettings`) au lieu de la constante figée `TIER_THRESHOLDS`. Les deux appelants (`lib/actions/order.ts`, `lib/actions/delivery.ts`) passent désormais les seuils réels ; `prisma/seed.ts` continue d'utiliser la valeur par défaut (paramètre optionnel), le seed s'exécutant sur une base sans réglage encore enregistré.
+- **Piège Next.js évité** : `whatsAppLink()` (construction de l'URL `wa.me/...`) est une fonction pure sans dépendance à Prisma, déplacée dans `lib/whatsapp.ts` séparé de `lib/shop-settings.ts` (qui, lui, importe Prisma). Le panier (`components/cart/CartView.tsx`, composant client) importe uniquement `lib/whatsapp.ts` et reçoit le numéro en props depuis sa page serveur — l'importer depuis `lib/shop-settings.ts` aurait tenté d'embarquer Prisma dans le bundle navigateur.
+- **Bug corrigé au passage** : le bouton WhatsApp de la fiche commande admin (`/admin/commandes/[id]`) ouvrait une conversation avec le numéro WhatsApp de la boutique elle-même au lieu du téléphone du client (`order.phone`, préfixé `237`). Sans lien avec F22, mais découvert en modifiant la signature de `whatsAppLink()`.
+
+**Impact.** F22 fait. Reste hors de ce lot : historique des modifications de réglages (pas demandé par le texte), validation plus fine des URLs de réseaux sociaux.
+
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
 **Constat.** Le design affiche une grille de 6 photos sous un bloc "Suivez-nous — @openstyle_cm". Le cahier des charges (F02) ne mentionne pas ce bloc parmi ceux à afficher.

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { formatPriceFcfa } from "@/lib/currency";
-import { whatsAppLink, shopInfo } from "@/lib/shop-info";
+import { whatsAppLink, getShopSettings } from "@/lib/shop-settings";
 import { Link } from "@/i18n/navigation";
 import ClearCartOnMount from "@/components/checkout/ClearCartOnMount";
 
@@ -16,10 +16,13 @@ export default async function OrderConfirmationPage({
   const t = await getTranslations("Checkout");
   const tTracking = await getTranslations("Tracking");
 
-  const order = await prisma.order.findUnique({
-    where: { number: numero },
-    include: { items: true, zone: true, relayPoint: true },
-  });
+  const [order, settings] = await Promise.all([
+    prisma.order.findUnique({
+      where: { number: numero },
+      include: { items: true, zone: true, relayPoint: true },
+    }),
+    getShopSettings(),
+  ]);
   if (!order) notFound();
 
   const methodLabel = t(`method${order.deliveryMethod}`);
@@ -71,7 +74,7 @@ export default async function OrderConfirmationPage({
       </div>
 
       <a
-        href={whatsAppLink(whatsappMessage)}
+        href={whatsAppLink(settings.whatsappNumber, whatsappMessage)}
         target="_blank"
         rel="noreferrer"
         className="btn-press mt-8 flex w-full items-center justify-center gap-2 bg-[#25D366] py-4 text-sm font-semibold text-white transition hover:opacity-90"
@@ -79,7 +82,7 @@ export default async function OrderConfirmationPage({
         {t("sendWhatsapp")}
       </a>
       <a
-        href={`tel:${shopInfo.phoneNumber}`}
+        href={`tel:${settings.phoneNumber}`}
         className="btn-press mt-3 flex w-full items-center justify-center gap-2 border border-os-gray py-4 text-sm font-semibold uppercase tracking-widest transition hover:border-os-black"
       >
         {t("callShop")}

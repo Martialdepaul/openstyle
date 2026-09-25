@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
+import { getShopSettings } from "@/lib/shop-settings";
 
 function slugify(text: string) {
   return text
@@ -76,6 +77,9 @@ export async function createProduct(formData: FormData) {
   // RG-22 : un produit sans taille ni couleur a une seule variante « par défaut ».
   const finalVariants = variantRows.length > 0 ? variantRows : [{ size: null, color: null, scent: null, stock: 0 }];
 
+  // F22/RG-24 : seuil de stock bas par défaut réglable, appliqué aux nouvelles variantes.
+  const { defaultLowStockThreshold } = await getShopSettings();
+
   const product = await prisma.product.create({
     data: {
       nameFr,
@@ -102,6 +106,7 @@ export async function createProduct(formData: FormData) {
           color: v.color,
           scent: v.scent,
           stock: v.stock,
+          lowStockThreshold: defaultLowStockThreshold,
         })),
       },
     },

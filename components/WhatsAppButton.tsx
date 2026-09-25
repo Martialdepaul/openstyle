@@ -1,12 +1,13 @@
 import { useTranslations } from "next-intl";
-import { whatsAppLink } from "@/lib/shop-info";
+import { getShopSettings, whatsAppLink } from "@/lib/shop-settings";
 
-export default function WhatsAppButton() {
+export default async function WhatsAppButton() {
   const t = useTranslations("WhatsAppButton");
+  const settings = await getShopSettings();
 
   return (
     <a
-      href={whatsAppLink(t("message"))}
+      href={whatsAppLink(settings.whatsappNumber, t("message"))}
       target="_blank"
       rel="noreferrer"
       aria-label={t("label")}

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { formatPriceFcfa } from "@/lib/currency";
-import { whatsAppLink } from "@/lib/shop-info";
+import { whatsAppLink } from "@/lib/shop-settings";
 import PageHeader from "@/components/admin/PageHeader";
 import ProductLink from "@/components/admin/ProductLink";
 import StatusBadge from "@/components/admin/StatusBadge";
@@ -194,7 +194,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                 Appeler
               </a>
               <a
-                href={whatsAppLink(whatsappMessageForOrder(order))}
+                href={whatsAppLink(`237${order.phone}`, whatsappMessageForOrder(order))}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-[#25D366] px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"

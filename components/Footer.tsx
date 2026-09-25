@@ -1,20 +1,16 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Logo from "./Logo";
-import { shopInfo, whatsAppLink } from "@/lib/shop-info";
+import { getShopSettings, whatsAppLink } from "@/lib/shop-settings";
 
-const socialIcons: Record<keyof typeof shopInfo.social, string> = {
-  facebook: "F",
-  instagram: "I",
-  tiktok: "T",
-};
+const socialIcons = { facebook: "F", instagram: "I", tiktok: "T" } as const;
 
-export default function Footer() {
+export default async function Footer() {
   const t = useTranslations("Footer");
+  const settings = await getShopSettings();
 
-  const socialLinks = (Object.keys(shopInfo.social) as Array<keyof typeof shopInfo.social>).filter(
-    (key) => shopInfo.social[key],
-  );
+  const social = { facebook: settings.facebook, instagram: settings.instagram, tiktok: settings.tiktok };
+  const socialLinks = (Object.keys(social) as Array<keyof typeof social>).filter((key) => social[key]);
 
   return (
     <footer className="mt-16 bg-os-black text-white">
@@ -29,7 +25,7 @@ export default function Footer() {
               {socialLinks.map((key) => (
                 <a
                   key={key}
-                  href={shopInfo.social[key]}
+                  href={social[key]}
                   target="_blank"
                   rel="noreferrer"
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 text-xs uppercase transition hover:border-white"
@@ -102,21 +98,21 @@ export default function Footer() {
             {t("contactTitle")}
           </h4>
           <ul className="flex flex-col gap-4 text-sm text-os-muted">
-            <li>{shopInfo.address}</li>
+            <li>{settings.address}</li>
             <li>
-              <a href={`tel:${shopInfo.phoneNumber}`} className="transition hover:text-white">
-                {shopInfo.phoneNumber}
+              <a href={`tel:${settings.phoneNumber}`} className="transition hover:text-white">
+                {settings.phoneNumber}
               </a>
             </li>
             <li>
-              <a href={`mailto:${shopInfo.email}`} className="transition hover:text-white">
-                {shopInfo.email}
+              <a href={`mailto:${settings.email}`} className="transition hover:text-white">
+                {settings.email}
               </a>
             </li>
-            <li>{shopInfo.hours}</li>
+            <li>{settings.hours}</li>
           </ul>
           <a
-            href={whatsAppLink(t("whatsappCta"))}
+            href={whatsAppLink(settings.whatsappNumber, t("whatsappCta"))}
             target="_blank"
             rel="noreferrer"
             className="mt-5 inline-flex items-center gap-2 rounded bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#20c05a]"
@@ -129,7 +125,7 @@ export default function Footer() {
       <div className="border-t border-white/10 px-4 py-5 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 text-center text-xs text-os-muted sm:flex-row sm:justify-between sm:text-left">
           <span>
-            © {new Date().getFullYear()} OPENSTYLE. {t("rights")}
+            © {new Date().getFullYear()} {settings.shopName}. {t("rights")}
           </span>
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             <Link href="/conditions-vente" className="transition hover:text-white">
