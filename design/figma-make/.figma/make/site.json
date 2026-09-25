@@ -1,0 +1,10 @@
+{
+  "description": "Empower users with personalized insights and actionable information, enhancing decision-making and productivity for individuals and teams.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

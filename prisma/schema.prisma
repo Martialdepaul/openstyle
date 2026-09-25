@@ -1,0 +1,364 @@
+// Schéma Prisma — section 5 du cahier des charges, adapté pour SQLite en
+// développement local (voir docs/decisions.md : bascule vers PostgreSQL/Neon
+// avant la mise en ligne). Seule différence notable avec la section 5 :
+// DeliveryZone.cities est une chaîne séparée par des virgules au lieu d'un
+// String[] (SQLite ne supporte pas les tableaux natifs) — à revenir en
+// String[] au passage sur PostgreSQL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  CUSTOMER
+  OWNER
+  MANAGER
+}
+
+enum ProStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  READY
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryMethod {
+  PICKUP
+  RELAY
+  SHIPPING
+}
+
+enum PaymentStatus {
+  TO_COLLECT
+  COLLECTED
+}
+
+enum PriceTier {
+  RETAIL
+  SEMI_WHOLESALE
+  WHOLESALE
+}
+
+enum StockReason {
+  ORDER_CONFIRMED
+  ORDER_CANCELLED
+  MANUAL
+  IMPORT
+}
+
+enum OrderEventType {
+  STATUS_CHANGE
+  CONTACT_ATTEMPT
+  NOTE
+  ITEMS_EDITED
+  EMAIL_SENT
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  phone          String?
+  role           Role            @default(CUSTOMER)
+  proStatus      ProStatus       @default(NONE)
+  shopName       String?
+  proCity        String?
+  proPhone       String?
+  proDecidedAt   DateTime?
+  locale         String          @default("fr")
+  createdAt      DateTime        @default(now())
+  orders         Order[]
+  stockMovements StockMovement[]
+  orderEvents    OrderEvent[]
+  adminLogs      AdminLog[]
+  resetTokens    PasswordResetToken[]
+}
+
+/** F08 : mot de passe oublié, lien valable 1 heure. */
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Category {
+  id       String     @id @default(cuid())
+  slug     String     @unique
+  nameFr   String
+  nameEn   String?
+  parentId String?
+  parent   Category?  @relation("Tree", fields: [parentId], references: [id])
+  children Category[] @relation("Tree")
+  position Int        @default(0)
+  imageUrl String?
+  isActive Boolean    @default(true)
+  products Product[]
+}
+
+model Product {
+  id             String         @id @default(cuid())
+  reference      String         @unique
+  slug           String         @unique
+  nameFr         String
+  nameEn         String?
+  descriptionFr  String         @default("")
+  descriptionEn  String?
+  categoryId     String
+  category       Category       @relation(fields: [categoryId], references: [id])
+  brand          String?
+  priceRetail    Int
+  pricePromo     Int?
+  priceSemi      Int? // palier 10 à 19 pièces
+  priceWholesale Int? // palier 20 pièces et plus
+  isNew          Boolean        @default(false)
+  isPopular      Boolean        @default(false)
+  isFeatured     Boolean        @default(false)
+  status         ProductStatus  @default(DRAFT)
+  soldCount      Int            @default(0)
+  inStock        Boolean        @default(true) // dénormalisé : au moins une variante active avec stock > 0
+  publishedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  images         ProductImage[]
+  variants       Variant[]
+  orderItems     OrderItem[]
+
+  @@index([status, categoryId, publishedAt])
+  @@index([status, isNew])
+  @@index([status, isPopular])
+  @@index([status, priceRetail])
+}
+
+model ProductImage {
+  id          String  @id @default(cuid())
+  productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  urlThumb    String // 400 px
+  urlCard     String // 800 px
+  urlFull     String // 1600 px
+  blurDataUrl String
+  alt         String?
+  position    Int     @default(0)
+
+  @@index([productId, position])
+}
+
+model Variant {
+  id                String          @id @default(cuid())
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku               String          @unique
+  size              String?
+  color             String?
+  colorHex          String?
+  scent             String?
+  stock             Int             @default(0)
+  lowStockThreshold Int             @default(3)
+  isActive          Boolean         @default(true)
+  orderItems        OrderItem[]
+  movements         StockMovement[]
+
+  @@index([productId])
+  @@index([size])
+  @@index([color])
+}
+
+model StockMovement {
+  id        String      @id @default(cuid())
+  variantId String
+  variant   Variant     @relation(fields: [variantId], references: [id])
+  delta     Int
+  reason    StockReason
+  orderId   String?
+  order     Order?      @relation(fields: [orderId], references: [id])
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@index([variantId, createdAt])
+}
+
+model DeliveryZone {
+  id           String  @id @default(cuid())
+  nameFr       String
+  nameEn       String?
+  // SQLite : pas de tableau natif. Chaîne de villes séparées par des
+  // virgules en attendant PostgreSQL (String[] dans la section 5).
+  cities       String
+  feeRetail    Int     @default(0)
+  feeWholesale Int     @default(0)
+  position     Int     @default(0)
+  orders       Order[]
+}
+
+model RelayPoint {
+  id       String  @id @default(cuid())
+  name     String
+  city     String
+  address  String
+  phone    String?
+  isActive Boolean @default(true)
+  orders   Order[]
+}
+
+model Order {
+  id               String          @id @default(cuid())
+  number           String          @unique // OS-000123, séquence Postgres en production
+  status           OrderStatus     @default(NEW)
+  userId           String?
+  user             User?           @relation(fields: [userId], references: [id])
+  firstName        String
+  lastName         String
+  phone            String
+  email            String?
+  locale           String          @default("fr")
+  deliveryMethod   DeliveryMethod
+  city             String
+  zoneId           String?
+  zone             DeliveryZone?   @relation(fields: [zoneId], references: [id])
+  relayPointId     String?
+  relayPoint       RelayPoint?     @relation(fields: [relayPointId], references: [id])
+  address          String?
+  agencyNote       String?
+  customerNote     String?
+  tier             PriceTier       @default(RETAIL)
+  subtotal         Int
+  deliveryFee      Int
+  total            Int
+  paymentStatus    PaymentStatus   @default(TO_COLLECT)
+  paymentNote      String?
+  receiptRequested Boolean         @default(false)
+  internalNote     String?
+  contactAttempts  Int             @default(0)
+  lastContactAt    DateTime?
+  confirmedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  items            OrderItem[]
+  events           OrderEvent[]
+  stockMovements   StockMovement[]
+
+  @@index([status, createdAt])
+  @@index([phone])
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  variantId String
+  variant   Variant @relation(fields: [variantId], references: [id])
+  name      String // copie au moment de la commande
+  reference String
+  size      String?
+  color     String?
+  scent     String?
+  imageUrl  String?
+  unitPrice Int
+  quantity  Int
+  lineTotal Int
+}
+
+model OrderEvent {
+  id         String          @id @default(cuid())
+  orderId    String
+  order      Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type       OrderEventType
+  fromStatus OrderStatus?
+  toStatus   OrderStatus?
+  note       String?
+  userId     String?
+  user       User?           @relation(fields: [userId], references: [id])
+  createdAt  DateTime        @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String // EXPORT_ORDERS, EXPORT_CUSTOMERS, PRO_APPROVED, PRO_REJECTED, ADMIN_CREATED, ROLE_CHANGED
+  entity    String?
+  entityId  String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Page {
+  slug      String   @id
+  titleFr   String
+  titleEn   String?
+  bodyFr    String
+  bodyEn    String?
+  updatedAt DateTime @updatedAt
+}
+
+model FaqItem {
+  id         String @id @default(cuid())
+  questionFr String
+  questionEn String?
+  answerFr   String
+  answerEn   String?
+  position   Int    @default(0)
+}
+
+model Testimonial {
+  id       String  @id @default(cuid())
+  author   String
+  city     String?
+  textFr   String
+  textEn   String?
+  photoUrl String?
+  position Int     @default(0)
+  isActive Boolean @default(true)
+}
+
+model Banner {
+  id         String  @id @default(cuid())
+  imageUrl   String
+  titleFr    String
+  titleEn    String?
+  subtitleFr String?
+  subtitleEn String?
+  linkUrl    String?
+  position   Int     @default(0)
+  isActive   Boolean @default(true)
+}
+
+model Setting {
+  key   String @id
+  value Json
+}

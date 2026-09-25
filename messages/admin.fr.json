@@ -1,0 +1,55 @@
+{
+  "Login": {
+    "title": "Connexion",
+    "subtitle": "Espace d'administration OpenStyle",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "error": "E-mail ou mot de passe incorrect."
+  },
+  "Nav": {
+    "home": "Accueil",
+    "orders": "Commandes",
+    "products": "Produits",
+    "stocks": "Stocks",
+    "categories": "Catégories",
+    "clients": "Clients",
+    "delivery": "Livraison",
+    "content": "Contenus",
+    "exports": "Exports",
+    "settings": "Paramètres",
+    "team": "Équipe",
+    "journal": "Journal",
+    "myAccount": "Mon compte",
+    "menu": "Menu",
+    "viewSite": "Voir le site",
+    "logout": "Déconnexion",
+    "newProduct": "+ Produit",
+    "roleOwner": "Gérante",
+    "roleManager": "Gestionnaire"
+  },
+  "Dashboard": {
+    "title": "Tableau de bord",
+    "newOrders": "Commandes à traiter",
+    "toFollowUp": "À relancer",
+    "pendingPro": "Demandes pro en attente",
+    "lowStock": "Variantes en stock bas ou épuisées",
+    "last7Days": "Commandes des 7 derniers jours",
+    "recentOrders": "Dernières commandes",
+    "noOrders": "Aucune commande pour le moment.",
+    "draftProducts": "Produits en brouillon"
+  },
+  "Account": {
+    "title": "Mon compte",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "newPassword": "Nouveau mot de passe (facultatif)",
+    "save": "Enregistrer",
+    "saved": "Enregistré."
+  },
+  "Forbidden": {
+    "title": "403",
+    "message": "Vous n'avez pas accès à cette page.",
+    "back": "Retour au tableau de bord"
+  }
+}
