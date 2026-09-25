@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getCategories } from "@/lib/products";
 import { auth } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/site-url";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -19,9 +20,19 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+/** F11 : réglages par défaut hérités par toute page qui ne surcharge pas openGraph/twitter. */
 export const metadata: Metadata = {
-  title: "OPENSTYLE",
-  description: "Un style qui s'accorde à votre identité.",
+  metadataBase: new URL(getSiteUrl()),
+  title: { default: "OPENSTYLE", template: "%s — OPENSTYLE" },
+  description: "Un style qui s'accorde à votre identité. Vêtements, sacs, accessoires et parfums — Yaoundé, Cameroun.",
+  openGraph: {
+    siteName: "OPENSTYLE",
+    type: "website",
+    images: [{ url: "/logo.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default async function LocaleLayout({

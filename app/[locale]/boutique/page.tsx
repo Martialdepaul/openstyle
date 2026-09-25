@@ -8,23 +8,34 @@ import { getCategories, getShopResults } from "@/lib/products";
 import { localizedText } from "@/lib/i18n-helpers";
 import type { ShopRouteTarget } from "@/lib/shop-route";
 import { toShopSearchParams, type RawSearchParams } from "@/lib/shop-search-params";
+import { getPathname } from "@/i18n/navigation";
 
 const route: ShopRouteTarget = { pathname: "/boutique" };
 
 export async function generateMetadata({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<RawSearchParams>;
 }): Promise<Metadata> {
-  const params = await searchParams;
+  const { locale } = await params;
+  const search = await searchParams;
   // F03 : canonical sans le paramètre de tri, pour ne pas indexer de doublons.
   const canonical = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
+  for (const [key, value] of Object.entries(search)) {
     if (key === "tri" || value === undefined) continue;
     canonical.set(key, Array.isArray(value) ? value[0] : value);
   }
   const qs = canonical.toString();
-  return { alternates: { canonical: qs ? `/boutique?${qs}` : "/boutique" } };
+  const path = getPathname({ href: "/boutique", locale });
+
+  return {
+    alternates: {
+      canonical: qs ? `${path}?${qs}` : path,
+      languages: { fr: getPathname({ href: "/boutique", locale: "fr" }), en: getPathname({ href: "/boutique", locale: "en" }) },
+    },
+  };
 }
 
 export default async function BoutiquePage({

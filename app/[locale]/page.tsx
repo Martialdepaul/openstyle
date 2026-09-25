@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import RevealObserver from "@/components/RevealObserver";
@@ -5,6 +6,18 @@ import ProductCard from "@/components/ProductCard";
 import { Link } from "@/i18n/navigation";
 import { localizedText } from "@/lib/i18n-helpers";
 import { getCategoryProductCount, getHomeData } from "@/lib/products";
+
+/** F11 : la page d'accueil garde le titre par défaut (OPENSTYLE) et fixe sa description + ses variantes de langue. */
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Home" });
+
+  return {
+    title: { absolute: "OPENSTYLE" },
+    description: t("heroSubtitle"),
+    alternates: { canonical: `/${locale}`, languages: { fr: "/fr", en: "/en" } },
+  };
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

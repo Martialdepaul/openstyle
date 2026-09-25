@@ -236,6 +236,22 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Impact.** RG-14 respectée. Une deuxième base (ex. environnement de test dédié, si mis en place un jour) devra rejouer cette migration comme les autres pour recréer la séquence.
 
+## SEO et partage (F11)
+
+**Constat.** F11 renvoie entièrement à la section 11, jamais reçue (voir la toute première entrée de ce journal, "Cahier des charges incomplet"). Aucun détail précis à suivre — valeur par défaut la plus simple retenue, comme prévu par la consigne 0.5.
+
+**Décision.**
+
+- `lib/site-url.ts` : URL du site déduite automatiquement (`SITE_URL` si définie, sinon l'URL de déploiement Vercel fournie par la plateforme, sinon `localhost:3000`) — pas de nom de domaine imposé par le texte, donc pas de valeur codée en dur. À définir explicitement (`SITE_URL`) dès qu'un nom de domaine personnalisé existe.
+- `app/robots.ts` : autorise l'indexation de la vitrine, bloque `/admin` et les pages privées (panier, commande, compte) dans les deux langues ; référence `sitemap.xml`.
+- `app/sitemap.ts` : plan du site régénéré à chaque requête (`export const dynamic = "force-dynamic"`, même raisonnement que `/boutique` et `/produit/[slug]` — sans ça, Next.js le figerait au build et il ne refléterait plus les produits publiés/dépubliés depuis) — pages statiques (accueil, boutique, contenus) et toutes les catégories actives/produits publiés, dans les deux langues.
+- Métadonnées par défaut (`app/[locale]/layout.tsx`) : `metadataBase`, modèle de titre (`%s — OPENSTYLE`), Open Graph et Twitter Card de base, hérités par toute page qui ne les redéfinit pas.
+- Pages avec métadonnées enrichies : accueil (description + variantes de langue), fiche produit (titre/description réels, image Open Graph depuis la première photo, variantes de langue via les vrais chemins localisés `/produit/[slug]` ↔ `/product/[slug]`), boutique (même correctif).
+- **Bug corrigé au passage** : le `canonical` de la page boutique pointait vers `/boutique` en dur, y compris en anglais (aurait dû être `/en/shop`) et sans préfixe de langue — jamais remarqué car non vérifié jusqu'ici. Recalculé via `getPathname()` (next-intl), avec les mêmes variantes de langue ajoutées à la fiche produit.
+- Les données structurées `Product` (JSON-LD) de F04 existaient déjà et n'ont pas été retouchées.
+
+**Impact.** F11 fait dans une version raisonnable par défaut. Pas de favicon dédié (reste le `logo.jpg` existant, non prioritaire pour le référencement) ; pas d'alternates de langue sur les autres pages (compte, suivi, etc. — moins pertinentes à indexer). À ajuster dès réception de la section 11 si elle diffère de ces choix.
+
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
 **Constat.** Le design affiche une grille de 6 photos sous un bloc "Suivez-nous — @openstyle_cm". Le cahier des charges (F02) ne mentionne pas ce bloc parmi ceux à afficher.

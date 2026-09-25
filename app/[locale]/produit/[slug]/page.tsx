@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { getPathname, Link } from "@/i18n/navigation";
 import ProductCard from "@/components/ProductCard";
 import ProductDetailInteractive from "@/components/product/ProductDetailInteractive";
 import { getProductBySlug, getRelatedProducts } from "@/lib/products";
@@ -22,9 +22,19 @@ export async function generateMetadata({
   const product = await getProductBySlug(slug);
   if (!product) return {};
 
+  const title = localizedText(locale, product.nameFr, product.nameEn);
+  const description = localizedText(locale, product.descriptionFr, product.descriptionEn);
+  const href = { pathname: "/produit/[slug]" as const, params: { slug } };
+  const image = product.images[0]?.urlCard;
+
   return {
-    title: localizedText(locale, product.nameFr, product.nameEn),
-    description: localizedText(locale, product.descriptionFr, product.descriptionEn),
+    title,
+    description,
+    alternates: {
+      canonical: getPathname({ href, locale }),
+      languages: { fr: getPathname({ href, locale: "fr" }), en: getPathname({ href, locale: "en" }) },
+    },
+    openGraph: { title, description, type: "website", ...(image ? { images: [{ url: image }] } : {}) },
   };
 }
 
