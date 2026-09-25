@@ -202,6 +202,14 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Impact.** F12 fait. Reste hors de ce lot : redirection post-réinitialisation consciente du rôle, e-mails F08/F09/F12 réels une fois Resend branché.
 
+## Exports CSV (F23)
+
+**Constat.** `/admin/exports` était déjà annoncé dans le menu admin mais renvoyait un 404.
+
+**Décision.** `lib/csv.ts` (BOM UTF-8, séparateur `;`, valeurs entre guillemets si elles contiennent le séparateur/un guillemet/un retour à la ligne — conforme à la demande "s'ouvre correctement dans Excel"). Deux routes (`app/admin/exports/commandes/route.ts`, `.../clients/route.ts`), pas des Server Actions : un export est un téléchargement de fichier via `GET`, chacune vérifie `requireRole("OWNER")` elle-même (pas seulement le menu qui la cache) et journalise l'export (`AdminLog`, `EXPORT_ORDERS`/`EXPORT_CUSTOMERS`). `/admin/exports` (page) porte les formulaires : commandes filtrables par période et statut, clients sans filtre (liste complète avec statut pro et nombre de commandes).
+
+**Impact.** F23 fait.
+
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
 **Constat.** Le design affiche une grille de 6 photos sous un bloc "Suivez-nous — @openstyle_cm". Le cahier des charges (F02) ne mentionne pas ce bloc parmi ceux à afficher.

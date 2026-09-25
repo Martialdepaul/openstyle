@@ -34,6 +34,7 @@
 | Admin — livraison | `pages/Delivery.tsx` (zones/frais en dur) | F20 | **fait** — `/admin/livraison`, onglets Zones (modification du nom, des villes et des frais détail/gros des 3 zones de F20) et Points relais (création, modification, activation/désactivation). Texte du délai de livraison éditable (réglage `Setting`) mais pas encore affiché sur la vitrine — voir `decisions.md`. Réservé à l'OWNER |
 | Admin — contenus | — (pas d'écran dans le design) | F21 | **fait**, partiel — `/admin/contenus`, onglets Pages (6 pages fixes de F10, contenu nettoyé avant enregistrement — `sanitize-html`, aperçu), FAQ (création, réordonnancement, suppression), Témoignages et Bannières (création, réordonnancement, activation/désactivation, suppression, lien "Voir sur le site"). Le lien "Voir sur le site" n'est pas encore proposé pour les pages/FAQ (existent en public depuis F10) — voir `decisions.md` |
 | Admin — paramètres | — (pas d'écran dans le design) | F22 | **fait** — `/admin/parametres`, formulaire unique (coordonnées, réseaux sociaux, e-mail de notification, seuils de paliers, seuil de stock bas par défaut, délai de livraison). Réservé à l'OWNER |
+| Admin — exports | — (pas d'écran dans le design) | F23 | **fait** — `/admin/exports`, CSV commandes (filtrable période/statut) et clients, UTF-8 avec BOM, séparateur `;`. Réservé à l'OWNER, chaque export journalisé |
 
 ## Écarts à traiter (contraires aux règles ou hors périmètre)
 
