@@ -17,9 +17,9 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Constat.** L'export Figma Make code en dur un numéro `+216 656 356 687` (indicatif tunisien, pas camerounais) dans Header, Footer, ProductCard, Product, Checkout et Account, ainsi qu'une adresse ("Yaoundé, Mokolo, Elobi — Centre commercial Dubaï Market", cohérente avec la section 1 du cahier des charges) et des horaires ("08h00 – 18h30").
 
-**Décision.** Ces valeurs ne sont pas codées en dur dans les composants reconstruits : elles viennent d'un point central (constante partagée en attendant le réglage `Setting` de F22, qui n'existe pas encore sans Prisma). Le numéro WhatsApp de l'export est conservé tel quel comme placeholder **explicitement documenté comme faux** jusqu'à ce que la cliente fournisse le vrai numéro — ne jamais l'utiliser comme numéro réel dans un test avec un utilisateur.
+**Décision.** Ces valeurs ne sont pas codées en dur dans les composants : elles viennent d'un point central (`lib/shop-info.ts`), en attendant le réglage `Setting` de F22. Le numéro WhatsApp/téléphone est désormais le vrai numéro camerounais de la boutique (`+237 656 356 687`, fourni par la cliente) — mis à jour, ce n'est plus le placeholder tunisien de l'export Figma Make. L'adresse et les horaires restent ceux de l'export (déjà cohérents avec la section 1 du cahier des charges), à confirmer par la cliente à l'occasion.
 
-**Impact.** À corriger dès que la cliente communique ses vraies coordonnées ; remplacé définitivement par le réglage `Setting` quand F22 sera fait.
+**Impact.** Numéro corrigé. Reste à remplacer définitivement par le réglage `Setting` quand F22 sera fait, et à confirmer l'adresse/les horaires avec la cliente si besoin.
 
 ## Données de démonstration pour F02 (avant Prisma)
 

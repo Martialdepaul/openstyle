@@ -1,12 +1,11 @@
 /**
  * Coordonnées de la boutique. Valeurs de substitution en attendant le
- * réglage `Setting` (F22, nécessite Prisma). Le numéro WhatsApp repris de
- * l'export Figma Make est un indicatif tunisien factice, PAS le vrai numéro
- * de la cliente — voir docs/decisions.md. Ne jamais le présenter comme réel.
+ * réglage `Setting` (F22, nécessite Prisma) — voir docs/decisions.md.
+ * Numéro WhatsApp/téléphone : vrai numéro camerounais de la boutique.
  */
 export const shopInfo = {
-  whatsappNumber: "216656356687",
-  phoneNumber: "+216656356687",
+  whatsappNumber: "237656356687",
+  phoneNumber: "+237656356687",
   address: "Yaoundé, Mokolo, Elobi — Centre commercial Dubaï Market",
   hours: "08h00 – 18h30",
   email: "Openstyle911@gmail.com",
