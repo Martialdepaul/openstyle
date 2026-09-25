@@ -169,7 +169,7 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 - Les migrations SQLite (`prisma/migrations/`) ont été supprimées et regénérées depuis zéro pour PostgreSQL (le SQL généré par Prisma dépend du moteur ; les anciennes migrations n'étaient pas rejouables sur Postgres). Une seule migration initiale désormais.
 - Dépendances `better-sqlite3` et `@prisma/adapter-better-sqlite3` retirées (plus utilisées, et évitent un module natif à compiler sur Vercel).
 - `dotenv` manquait comme dépendance directe (seed.ts en a besoin pour charger `.env` hors du CLI Prisma) — ajouté.
-- **RG-14 non pleinement respectée** : le numéro de commande (`OS-000123`) est toujours généré par comptage (`prisma/orders.ts`), pas par une vraie séquence Postgres atomique comme demandé par le texte. Fonctionne correctement en usage normal, mais deux commandes créées à la même milliseconde pourraient théoriquement obtenir le même numéro. À corriger avec une vraie séquence SQL avant un trafic réel.
+- **RG-14 (corrigée depuis)** : le numéro de commande était généré par comptage (`SELECT COUNT(*)+1`), pas par une vraie séquence Postgres atomique comme demandé par le texte — risque théorique de collision entre deux commandes créées au même instant. Voir la section "Séquence Postgres pour le numéro de commande (RG-14)" plus bas pour la correction.
 - Avertissement bénin au démarrage (`pg-connection-string`) sur le mode SSL `require` — sans impact aujourd'hui, deviendra pertinent avec une future version majeure de `pg` (voir le message dans les journaux).
 
 **Impact.** La base de données de développement local et celle utilisée par Vercel sont désormais la même instance Neon (aucune base locale distincte) — toute donnée de test ajoutée en local (y compris via le seed) est visible en production tant qu'une base dédiée par environnement n'est pas mise en place.
@@ -227,6 +227,14 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 - **Tests Playwright (parcours commande invité/pro, création produit admin)** : la consigne dit qu'ils "suffisent" pour le reste, contrairement aux quatre sujets ci-dessus qui sont "obligatoires". Non faits dans ce lot, faute de temps ; à prioriser ensuite si la cliente veut une couverture de bout en bout.
 
 **Impact.** Les quatre sujets obligatoires de la section 0.6 sont couverts. Reste : tests Playwright (recommandés, pas obligatoires selon le texte), et étendre les tests unitaires si de nouvelles règles de calcul apparaissent.
+
+## Séquence Postgres pour le numéro de commande (RG-14)
+
+**Constat.** Depuis la migration vers Postgres, le numéro de commande (`OS-000123`) restait généré par `SELECT COUNT(*)+1` (`lib/order-number.ts`), documenté comme un gap connu — RG-14 demande explicitement une séquence Postgres.
+
+**Décision.** Migration `add_order_number_sequence` : `CREATE SEQUENCE order_number_seq`, initialisée par `setval` au plus grand numéro déjà utilisé (`SUBSTRING` sur les commandes de démonstration existantes) + 1, pour ne pas entrer en collision avec les commandes du seed. `generateOrderNumber()` appelle désormais `SELECT nextval('order_number_seq')` via `prisma.$queryRaw` — atomique sous accès concurrent par construction (propriété native des séquences Postgres), contrairement à l'ancien comptage.
+
+**Impact.** RG-14 respectée. Une deuxième base (ex. environnement de test dédié, si mis en place un jour) devra rejouer cette migration comme les autres pour recréer la séquence.
 
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
