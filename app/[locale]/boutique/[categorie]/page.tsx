@@ -10,10 +10,9 @@ import { localizedText } from "@/lib/i18n-helpers";
 import type { ShopRouteTarget } from "@/lib/shop-route";
 import { toShopSearchParams, type RawSearchParams } from "@/lib/shop-search-params";
 
-export async function generateStaticParams() {
-  const categories = await getCategories();
-  return categories.map((category) => ({ categorie: category.slug }));
-}
+// Rendu à la demande (pas de generateStaticParams) : les catégories changent
+// via l'admin (F16), une génération statique au build forcerait un
+// redéploiement complet à chaque création/désactivation — voir docs/decisions.md.
 
 export async function generateMetadata({
   params,

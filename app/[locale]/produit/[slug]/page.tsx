@@ -6,14 +6,12 @@ import { Link } from "@/i18n/navigation";
 import ProductCard from "@/components/ProductCard";
 import ProductDetailInteractive from "@/components/product/ProductDetailInteractive";
 import { getProductBySlug, getRelatedProducts } from "@/lib/products";
-import { prisma } from "@/lib/db";
 import { formatPriceFcfa } from "@/lib/currency";
 import { localizedText } from "@/lib/i18n-helpers";
 
-export async function generateStaticParams() {
-  const products = await prisma.product.findMany({ where: { status: "PUBLISHED" }, select: { slug: true } });
-  return products.map((product) => ({ slug: product.slug }));
-}
+// Rendu à la demande (pas de generateStaticParams) : la liste des produits
+// change via l'admin, une génération statique au build forcerait un
+// redéploiement complet à chaque produit publié/dépublié — voir docs/decisions.md.
 
 export async function generateMetadata({
   params,
