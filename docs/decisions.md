@@ -123,7 +123,15 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Décision.** `lib/actions/order-items.ts` : `updateOrderLineQuantity`, `removeOrderLine`, `updateOrderDeliveryMethod` — chacune vérifie le statut `NEW` (refus explicite sinon), dans une transaction. Après toute modification, `recalculateOrderTotals` reproduit exactement le calcul de `lib/actions/order.ts` (création) : quantité totale → palier (`tierForQuantity`/`effectiveTier`, y compris le statut pro du compte client s'il y en a un) → prix de chaque ligne relu depuis le produit réel au palier obtenu (RG-04/RG-05, pas un simple recalcul du sous-total avec les anciens prix de ligne) → frais de livraison (zone + palier) → totaux. Chaque modification crée un événement `ITEMS_EDITED` avec une note lisible (ex. « Quantité de « Robe midi » modifiée : 2 → 3 »). Une commande garde toujours au moins une ligne (le retrait de la dernière est refusé). Interface : `/admin/commandes/[id]` affiche les contrôles (quantité + retirer par ligne, sélecteur de mode de livraison avec point relais/adresse selon le choix) uniquement quand `order.status === "NEW"`.
 
-**Impact.** RG-11 faite. Reste : le reçu imprimable (F18).
+**Impact.** RG-11 faite. Reste : le reçu imprimable (F18, voir section suivante).
+
+## Reçu imprimable (F18)
+
+**Constat.** F18 demande une page imprimable (coordonnées de la boutique, numéro, lignes, totaux, mention de paiement) accessible depuis la fiche commande.
+
+**Décision.** `/admin/commandes/[id]/recu`, volontairement placée **hors** du groupe `(dashboard)` pour ne pas hériter du menu/de la coque admin (`app/admin/layout.tsx` reste la seule mise en page — même mécanisme que les routes d'export, section F23) : rien à imprimer que le reçu lui-même. Accès vérifié comme toute page admin (`requireRole("OWNER")`, F18 étant réservé à l'OWNER). Bouton "Imprimer" (`window.print()`, masqué à l'impression via `print:hidden`) plutôt qu'une feuille de style d'impression dédiée séparée — le rendu HTML normal de la page suffit déjà à une impression propre (mise en page en carte simple, pas de navigation à masquer puisqu'il n'y en a pas). Mention « Payé à la réception » si `paymentStatus = COLLECTED`, sinon « À payer à la réception ». Lien "Imprimer le reçu" ajouté sur `/admin/commandes/[id]` (ouvre un nouvel onglet).
+
+**Impact.** F18 fait dans son ensemble.
 
 ## Catégories (F16), livraison (F20), contenus (F21)
 

@@ -134,6 +134,14 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                 <span>{formatPriceFcfa(order.total)}</span>
               </div>
             </div>
+            <a
+              href={`/admin/commandes/${order.id}/recu`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-block border border-os-black px-4 py-2 text-xs uppercase tracking-wide transition hover:bg-os-black hover:text-white"
+            >
+              Imprimer le reçu
+            </a>
           </section>
 
           <section className="border border-os-gray bg-white p-6">
