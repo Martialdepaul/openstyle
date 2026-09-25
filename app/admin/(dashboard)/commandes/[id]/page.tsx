@@ -8,8 +8,11 @@ import ProductLink from "@/components/admin/ProductLink";
 import StatusBadge from "@/components/admin/StatusBadge";
 import OrderStatusActions from "@/components/admin/OrderStatusActions";
 import ContactAttemptButton from "@/components/admin/ContactAttemptButton";
+import OrderLineEditor from "@/components/admin/OrderLineEditor";
+import OrderDeliveryMethodEditor from "@/components/admin/OrderDeliveryMethodEditor";
 import { updateInternalNote, updatePaymentStatus } from "@/lib/actions/order-status";
 import { ORDER_STATUS_TRANSITIONS } from "@/lib/orders";
+import { availableDeliveryMethods } from "@/lib/delivery";
 import type { OrderStatus } from "@/generated/prisma/client";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -72,6 +75,10 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   const updatePaymentWithId = updatePaymentStatus.bind(null, order.id);
   const updateNoteWithId = updateInternalNote.bind(null, order.id);
 
+  // RG-11 : lignes/mode de livraison modifiables uniquement tant que la commande est NEW.
+  const isEditable = order.status === "NEW";
+  const relayPoints = isEditable ? await prisma.relayPoint.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }) : [];
+
   // Section 8.1 : sans compte, on propose la recherche des autres commandes du même téléphone.
   const samePhoneCount = order.userId ? 0 : await prisma.order.count({ where: { phone: order.phone, id: { not: order.id } } });
 
@@ -108,6 +115,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                       {item.quantity} × {formatPriceFcfa(item.unitPrice)}
                     </p>
                     <p className="font-semibold">{formatPriceFcfa(item.lineTotal)}</p>
+                    {isEditable && <OrderLineEditor orderId={order.id} itemId={item.id} quantity={item.quantity} />}
                   </div>
                 </div>
               ))}
@@ -147,6 +155,16 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                 <span className="font-semibold">Note du client : </span>
                 {order.customerNote}
               </p>
+            )}
+            {isEditable && (
+              <OrderDeliveryMethodEditor
+                orderId={order.id}
+                currentMethod={order.deliveryMethod}
+                availableMethods={availableDeliveryMethods(order.city)}
+                relayPoints={relayPoints}
+                currentRelayPointId={order.relayPointId}
+                currentAddress={order.address}
+              />
             )}
           </section>
 

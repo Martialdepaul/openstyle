@@ -115,7 +115,15 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Décision.** Ce lot construit : liste avec recherche/filtres/tri, fiche détail (lignes avec lien produit, livraison, historique non modifiable), changement de statut réel avec RG-09/10/12 (transitions autorisées, décompte du stock à la confirmation avec refus propre si stock insuffisant, remise en stock à l'annulation après confirmation), tentative de contact (RG-13), état du paiement (RG-16), note interne. La modification des lignes et le reçu imprimable sont reportés.
 
-**Impact.** À compléter avec RG-11 et le reçu imprimable dans un lot suivant. Les e-mails de suivi (E2/E3) ne partent pas : Resend n'est pas branché (même limite que F06).
+**Impact.** RG-11 faite depuis (voir la section dédiée plus bas). Reste : le reçu imprimable. Les e-mails de suivi (E2/E3) ne partent pas : Resend n'est pas branché (même limite que F06).
+
+## Modification des lignes d'une commande NEW (RG-11)
+
+**Constat.** RG-11 autorise la gérante à modifier les quantités, retirer des lignes et changer le mode de livraison tant qu'une commande est `NEW`, avec un recalcul complet ("les totaux sont recalculés avec les mêmes règles de prix").
+
+**Décision.** `lib/actions/order-items.ts` : `updateOrderLineQuantity`, `removeOrderLine`, `updateOrderDeliveryMethod` — chacune vérifie le statut `NEW` (refus explicite sinon), dans une transaction. Après toute modification, `recalculateOrderTotals` reproduit exactement le calcul de `lib/actions/order.ts` (création) : quantité totale → palier (`tierForQuantity`/`effectiveTier`, y compris le statut pro du compte client s'il y en a un) → prix de chaque ligne relu depuis le produit réel au palier obtenu (RG-04/RG-05, pas un simple recalcul du sous-total avec les anciens prix de ligne) → frais de livraison (zone + palier) → totaux. Chaque modification crée un événement `ITEMS_EDITED` avec une note lisible (ex. « Quantité de « Robe midi » modifiée : 2 → 3 »). Une commande garde toujours au moins une ligne (le retrait de la dernière est refusé). Interface : `/admin/commandes/[id]` affiche les contrôles (quantité + retirer par ligne, sélecteur de mode de livraison avec point relais/adresse selon le choix) uniquement quand `order.status === "NEW"`.
+
+**Impact.** RG-11 faite. Reste : le reçu imprimable (F18).
 
 ## Catégories (F16), livraison (F20), contenus (F21)
 
