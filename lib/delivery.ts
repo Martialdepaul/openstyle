@@ -19,12 +19,7 @@ export async function findZoneForCity(city: string): Promise<ZoneMatch> {
   if (zones.length === 0) return null;
 
   const normalized = city.trim().toLowerCase();
-  const match = zones.find((zone) =>
-    zone.cities
-      .split(",")
-      .map((c) => c.trim().toLowerCase())
-      .includes(normalized),
-  );
+  const match = zones.find((zone) => zone.cities.map((c) => c.trim().toLowerCase()).includes(normalized));
   return match ?? zones[zones.length - 1];
 }
 

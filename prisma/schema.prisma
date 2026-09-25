@@ -1,9 +1,7 @@
-// Schéma Prisma — section 5 du cahier des charges, adapté pour SQLite en
-// développement local (voir docs/decisions.md : bascule vers PostgreSQL/Neon
-// avant la mise en ligne). Seule différence notable avec la section 5 :
-// DeliveryZone.cities est une chaîne séparée par des virgules au lieu d'un
-// String[] (SQLite ne supporte pas les tableaux natifs) — à revenir en
-// String[] au passage sur PostgreSQL.
+// Schéma Prisma — section 5 du cahier des charges, sur PostgreSQL (Neon).
+// Le projet a démarré sur SQLite en développement local (voir
+// docs/decisions.md pour l'historique) ; DeliveryZone.cities est de nouveau
+// un String[] natif depuis le passage à PostgreSQL.
 
 generator client {
   provider = "prisma-client"
@@ -11,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum Role {
@@ -210,9 +208,7 @@ model DeliveryZone {
   id           String  @id @default(cuid())
   nameFr       String
   nameEn       String?
-  // SQLite : pas de tableau natif. Chaîne de villes séparées par des
-  // virgules en attendant PostgreSQL (String[] dans la section 5).
-  cities       String
+  cities       String[]
   feeRetail    Int     @default(0)
   feeWholesale Int     @default(0)
   position     Int     @default(0)

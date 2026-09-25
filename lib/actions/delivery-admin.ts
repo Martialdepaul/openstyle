@@ -12,11 +12,15 @@ export async function updateDeliveryZone(zoneId: string, formData: FormData): Pr
 
   const nameFr = String(formData.get("nameFr") ?? "").trim();
   const nameEn = String(formData.get("nameEn") ?? "").trim() || null;
-  const cities = String(formData.get("cities") ?? "").trim();
+  const citiesRaw = String(formData.get("cities") ?? "").trim();
+  const cities = citiesRaw
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
   const feeRetail = Math.max(0, Math.trunc(Number(formData.get("feeRetail")) || 0));
   const feeWholesale = Math.max(0, Math.trunc(Number(formData.get("feeWholesale")) || 0));
 
-  if (!nameFr || !cities) throw new Error("Le nom et les villes sont obligatoires.");
+  if (!nameFr || cities.length === 0) throw new Error("Le nom et les villes sont obligatoires.");
 
   await prisma.deliveryZone.update({
     where: { id: zoneId },

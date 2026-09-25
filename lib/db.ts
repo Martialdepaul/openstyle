@@ -1,13 +1,13 @@
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 /**
- * Client Prisma unique côté serveur. SQLite en développement local (voir
- * docs/decisions.md) ; à remplacer par l'adaptateur PostgreSQL (Neon) avant
- * la mise en ligne — seul ce fichier change, le reste du code interroge
- * `prisma` sans savoir quel moteur est derrière.
+ * Client Prisma unique côté serveur. PostgreSQL (Neon) — voir
+ * docs/decisions.md pour l'historique (SQLite en développement local avant
+ * cette migration). Seul ce fichier connaît l'adaptateur ; le reste du code
+ * interroge `prisma` sans savoir quel moteur est derrière.
  */
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./dev.db" });
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 

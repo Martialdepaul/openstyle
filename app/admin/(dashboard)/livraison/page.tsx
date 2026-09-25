@@ -75,7 +75,7 @@ async function ZonesTab() {
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest">Villes incluses (séparées par des virgules)</label>
                 <input
                   name="cities"
-                  defaultValue={zone.cities}
+                  defaultValue={zone.cities.join(", ")}
                   required
                   className="w-full border border-os-gray px-3 py-2 text-sm focus:border-os-black focus:outline-none"
                 />

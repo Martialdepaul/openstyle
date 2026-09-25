@@ -143,6 +143,22 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Impact.** Toutes ces données sont explicitement fictives (noms, boutiques, montants de livraison, avis clients) et devront être retirées ou remplacées avant une mise en ligne réelle — notamment les comptes de démonstration (mot de passe partagé) et les frais de livraison. `prisma/seed.ts` reste le point d'entrée unique pour regénérer ou ajuster ce jeu de données.
 
+## Migration de SQLite vers PostgreSQL (Neon), mise en ligne
+
+**Constat.** Le développement a démarré sur SQLite en local (voir plus haut dans ce journal). Au moment de mettre le projet sur GitHub/Vercel, il fallait basculer sur la vraie base prévue par le cahier des charges (PostgreSQL, hébergée sur Neon) — SQLite ne fonctionne pas sur l'infrastructure serverless de Vercel (système de fichiers non persistant).
+
+**Décision.**
+
+- `prisma/schema.prisma` : `datasource` en `postgresql`. `DeliveryZone.cities` est redevenu un vrai `String[]` (ce n'était une chaîne séparée par des virgules que par limitation de SQLite).
+- `lib/db.ts` et `prisma/seed.ts` : adaptateur `@prisma/adapter-pg` (`pg`) à la place de `@prisma/adapter-better-sqlite3`. Ces deux fichiers restent les seuls endroits qui connaissent l'existence d'un adaptateur.
+- Les migrations SQLite (`prisma/migrations/`) ont été supprimées et regénérées depuis zéro pour PostgreSQL (le SQL généré par Prisma dépend du moteur ; les anciennes migrations n'étaient pas rejouables sur Postgres). Une seule migration initiale désormais.
+- Dépendances `better-sqlite3` et `@prisma/adapter-better-sqlite3` retirées (plus utilisées, et évitent un module natif à compiler sur Vercel).
+- `dotenv` manquait comme dépendance directe (seed.ts en a besoin pour charger `.env` hors du CLI Prisma) — ajouté.
+- **RG-14 non pleinement respectée** : le numéro de commande (`OS-000123`) est toujours généré par comptage (`prisma/orders.ts`), pas par une vraie séquence Postgres atomique comme demandé par le texte. Fonctionne correctement en usage normal, mais deux commandes créées à la même milliseconde pourraient théoriquement obtenir le même numéro. À corriger avec une vraie séquence SQL avant un trafic réel.
+- Avertissement bénin au démarrage (`pg-connection-string`) sur le mode SSL `require` — sans impact aujourd'hui, deviendra pertinent avec une future version majeure de `pg` (voir le message dans les journaux).
+
+**Impact.** La base de données de développement local et celle utilisée par Vercel sont désormais la même instance Neon (aucune base locale distincte) — toute donnée de test ajoutée en local (y compris via le seed) est visible en production tant qu'une base dédiée par environnement n'est pas mise en place.
+
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 
 **Constat.** Le design affiche une grille de 6 photos sous un bloc "Suivez-nous — @openstyle_cm". Le cahier des charges (F02) ne mentionne pas ce bloc parmi ceux à afficher.

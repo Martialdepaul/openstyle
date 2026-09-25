@@ -1,10 +1,11 @@
+import "dotenv/config.js";
 import { PrismaClient } from "../generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 import { effectiveTier, tierForQuantity, unitPrice } from "../lib/pricing";
 import { availableDeliveryMethods, deliveryFee, findZoneForCity } from "../lib/delivery";
 
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./dev.db" });
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 type SeedVariantAxis = { sizes?: string[]; colors?: string[]; scents?: string[] };
@@ -369,9 +370,9 @@ const pages = [
  * /admin/livraison) — voir docs/decisions.md.
  */
 const deliveryZones = [
-  { nameFr: "Yaoundé", cities: "Yaoundé", feeRetail: 1500, feeWholesale: 2500 },
-  { nameFr: "Douala, Edéa, Bafoussam, Kribi, Limbé", cities: "Douala,Edéa,Bafoussam,Kribi,Limbé", feeRetail: 3500, feeWholesale: 6000 },
-  { nameFr: "Autres villes", cities: "Autres", feeRetail: 5000, feeWholesale: 8500 },
+  { nameFr: "Yaoundé", cities: ["Yaoundé"], feeRetail: 1500, feeWholesale: 2500 },
+  { nameFr: "Douala, Edéa, Bafoussam, Kribi, Limbé", cities: ["Douala", "Edéa", "Bafoussam", "Kribi", "Limbé"], feeRetail: 3500, feeWholesale: 6000 },
+  { nameFr: "Autres villes", cities: ["Autres"], feeRetail: 5000, feeWholesale: 8500 },
 ];
 
 /** Points relais de démonstration (Yaoundé uniquement, RG-18) — coordonnées factices, à remplacer via F20. */
