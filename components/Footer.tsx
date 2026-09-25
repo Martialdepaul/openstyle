@@ -18,7 +18,7 @@ export default function Footer() {
 
   return (
     <footer className="mt-16 bg-os-black text-white">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-14 md:grid-cols-3 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-14 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <div className="mb-4 inline-block rounded bg-os-white p-2">
             <Logo className="h-10" />
@@ -71,6 +71,34 @@ export default function Footer() {
 
         <div>
           <h4 className="mb-5 text-xs font-semibold uppercase tracking-widest text-os-gray">
+            {t("infoTitle")}
+          </h4>
+          <ul className="flex flex-col gap-3 text-sm text-os-muted">
+            <li>
+              <Link href="/a-propos" className="transition hover:text-white">
+                {t("about")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className="transition hover:text-white">
+                {t("contactTitle")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/faq" className="transition hover:text-white">
+                {t("faq")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/livraison-retrait" className="transition hover:text-white">
+                {t("delivery")}
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="mb-5 text-xs font-semibold uppercase tracking-widest text-os-gray">
             {t("contactTitle")}
           </h4>
           <ul className="flex flex-col gap-4 text-sm text-os-muted">
@@ -98,10 +126,23 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-white/10 px-4 py-5 text-center text-xs text-os-muted lg:px-8">
-        <span>
-          © {new Date().getFullYear()} OPENSTYLE. {t("rights")}
-        </span>
+      <div className="border-t border-white/10 px-4 py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 text-center text-xs text-os-muted sm:flex-row sm:justify-between sm:text-left">
+          <span>
+            © {new Date().getFullYear()} OPENSTYLE. {t("rights")}
+          </span>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <Link href="/conditions-vente" className="transition hover:text-white">
+              {t("terms")}
+            </Link>
+            <Link href="/confidentialite" className="transition hover:text-white">
+              {t("privacy")}
+            </Link>
+            <Link href="/mentions-legales" className="transition hover:text-white">
+              {t("legal")}
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

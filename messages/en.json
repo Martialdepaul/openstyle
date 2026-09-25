@@ -22,7 +22,14 @@
     "becomePro": "Become a pro client",
     "contactTitle": "Contact",
     "whatsappCta": "Order via WhatsApp",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "infoTitle": "Information",
+    "about": "About",
+    "faq": "FAQ",
+    "delivery": "Delivery & pickup",
+    "terms": "Terms of sale",
+    "privacy": "Privacy",
+    "legal": "Legal notice"
   },
   "Product": {
     "saleBadge": "SALE",
@@ -229,5 +236,27 @@
     "reassuranceQuality": "Guaranteed quality",
     "reassuranceExchange": "Exchange possible",
     "reassuranceContact": "WhatsApp support"
+  },
+  "ContentPages": {
+    "contact": {
+      "addressLabel": "Address",
+      "hoursLabel": "Opening hours",
+      "callCta": "Call the shop",
+      "whatsappCta": "Message on WhatsApp",
+      "whatsappMessage": "Hello, I have a question."
+    },
+    "delivery": {
+      "zonesTitle": "Delivery zones and fees",
+      "zoneColumn": "Zone",
+      "citiesColumn": "Cities",
+      "retailColumn": "Retail price",
+      "wholesaleColumn": "Wholesale price (pro clients)",
+      "pickupNote": "In-store pickup: free, for any city.",
+      "delayLabel": "Estimated delivery time"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "empty": "No questions yet."
+    }
   }
 }

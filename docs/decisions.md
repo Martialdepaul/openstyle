@@ -124,11 +124,26 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 **Décisions :**
 
 - F16 : suppression autorisée seulement si la catégorie ne contient aucun produit et n'a aucune sous-catégorie (sinon désactivation forcée, texte d'erreur explicite) — le modèle `Category` n'a pas de champ dédié à une suppression différée, ce contrôle suffit.
-- F20 : le texte du délai de livraison (ex. « 2 jours ») est enregistré comme réglage (`Setting`, clé `deliveryDelayText`) mais **n'est pas encore affiché sur la vitrine** — aucune page publique ne le lit pour l'instant (F06 utilise un texte statique par mode de livraison). À brancher quand F22 (paramètres) sera repris dans son ensemble.
+- F20 : le texte du délai de livraison (ex. « 2 jours ») est enregistré comme réglage (`Setting`, clé `deliveryDelayText`). Affiché depuis F10 sur la page publique `/livraison-retrait` ; **toujours pas repris dans le récapitulatif de commande (F06)**, qui garde un texte statique par mode de livraison — à brancher quand F22 (paramètres) sera repris dans son ensemble.
 - F21 : le contenu des pages (F10) est nettoyé avant enregistrement avec `sanitize-html` (balises limitées à `h2/h3/p/ul/ol/li/strong/em/a/br`, aucun script), conformément au critère « aucun script accepté ». L'aperçu dans l'admin affiche le HTML tel que tapé (avant nettoyage serveur) — acceptable car c'est un aperçu de la gérante pour elle-même dans son propre navigateur, jamais exposé à un visiteur.
-- F21 : les 6 pages de contenu gérées (à-propos, contact, livraison et retrait, conditions de vente, confidentialité, mentions légales) correspondent à la liste de F10. Comme F10 (écrans publics) n'est pas encore construit, leur contenu est enregistrable dès maintenant mais ne s'affiche nulle part sur la vitrine ; le lien « Voir sur le site » n'est donc proposé que pour les témoignages et bannières, déjà affichés sur l'accueil (F02).
+- F21 : les 6 pages de contenu gérées (à-propos, contact, livraison et retrait, conditions de vente, confidentialité, mentions légales) correspondent à la liste de F10, désormais affichées sur des routes publiques (voir section F10 ci-dessous). Le lien « Voir sur le site » reste réservé aux témoignages et bannières dans l'admin contenus — à étendre aux pages/FAQ dans un lot suivant.
 
-**Impact.** À relier : le texte du délai de livraison sur la vitrine (avec F22), les pages de contenu sur des routes publiques (F10, sections FAQ/Livraison/CGV/etc.).
+**Impact.** Reste à relier : le texte du délai de livraison dans le récapitulatif de commande (F06, avec F22).
+
+## Pages de contenu publiques (F10)
+
+**Constat.** Les 6 pages `Page` (à-propos, contact, livraison et retrait, conditions de vente, confidentialité, mentions légales) et la FAQ (`FaqItem`) étaient éditables dans l'admin (F21) mais n'avaient aucune route publique.
+
+**Décision.**
+
+- Chemins localisés ajoutés à `i18n/routing.ts` (aucun exemple donné par F01) : `/a-propos` (`/about`), `/contact` (identique), `/livraison-retrait` (`/delivery`), `/faq` (identique), `/conditions-vente` (`/terms`), `/confidentialite` (`/privacy`), `/mentions-legales` (`/legal`).
+- Le HTML de `Page.bodyFr`/`bodyEn` est injecté tel quel (`dangerouslySetInnerHTML`) : sans risque, puisqu'il est déjà nettoyé par `sanitize-html` avant d'être enregistré (F21) et que seul un admin peut l'écrire.
+- `/contact` ajoute des boutons Appeler/WhatsApp réels (pas de formulaire, conformément à F10) au-dessus du contenu `Page`.
+- `/livraison-retrait` ajoute un tableau des zones/frais réels (`DeliveryZone`) et le texte du délai de livraison (`Setting`), en plus du contenu `Page` — répond au critère d'acceptation F10 (« le texte de la page Livraison reprend les zones et les frais saisis dans l'admin »).
+- `/faq` liste les `FaqItem` dans un accordéon natif `<details>`/`<summary>` (pas de composant client, pas de JavaScript nécessaire).
+- Pied de page (`components/Footer.tsx`) : colonne "Informations" ajoutée (À propos, Contact, FAQ, Livraison) et liens légaux (CGV, Confidentialité, Mentions légales) ajoutés à la ligne de copyright.
+
+**Impact.** F10 fait. Reste hors de ce lot : le lien « Modifier dans l'admin » sur ces pages pour un admin connecté (section 8.1) et le lien « Voir sur le site » correspondant dans `/admin/contenus`.
 
 ## Données de démonstration partout (boutique et admin), sur demande explicite
 

@@ -62,5 +62,27 @@ export const routing = defineRouting({
       fr: "/compte/commandes/[numero]",
       en: "/account/orders/[numero]",
     },
+    "/a-propos": {
+      fr: "/a-propos",
+      en: "/about",
+    },
+    "/contact": "/contact",
+    "/livraison-retrait": {
+      fr: "/livraison-retrait",
+      en: "/delivery",
+    },
+    "/faq": "/faq",
+    "/conditions-vente": {
+      fr: "/conditions-vente",
+      en: "/terms",
+    },
+    "/confidentialite": {
+      fr: "/confidentialite",
+      en: "/privacy",
+    },
+    "/mentions-legales": {
+      fr: "/mentions-legales",
+      en: "/legal",
+    },
   },
 });

@@ -22,7 +22,14 @@
     "becomePro": "Devenir client pro",
     "contactTitle": "Contact",
     "whatsappCta": "Commander via WhatsApp",
-    "rights": "Tous droits réservés."
+    "rights": "Tous droits réservés.",
+    "infoTitle": "Informations",
+    "about": "À propos",
+    "faq": "FAQ",
+    "delivery": "Livraison & retrait",
+    "terms": "Conditions de vente",
+    "privacy": "Confidentialité",
+    "legal": "Mentions légales"
   },
   "Product": {
     "saleBadge": "SOLDES",
@@ -229,5 +236,27 @@
     "reassuranceQuality": "Qualité garantie",
     "reassuranceExchange": "Échange possible",
     "reassuranceContact": "Assistance WhatsApp"
+  },
+  "ContentPages": {
+    "contact": {
+      "addressLabel": "Adresse",
+      "hoursLabel": "Horaires",
+      "callCta": "Appeler la boutique",
+      "whatsappCta": "Écrire sur WhatsApp",
+      "whatsappMessage": "Bonjour, j'ai une question."
+    },
+    "delivery": {
+      "zonesTitle": "Zones et frais de livraison",
+      "zoneColumn": "Zone",
+      "citiesColumn": "Villes",
+      "retailColumn": "Prix détail",
+      "wholesaleColumn": "Prix gros (client pro)",
+      "pickupNote": "Retrait en boutique : gratuit, quelle que soit la ville.",
+      "delayLabel": "Délai de livraison estimé"
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "empty": "Aucune question pour le moment."
+    }
   }
 }
