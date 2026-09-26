@@ -1,0 +1,4 @@
+reference,categorie,nom_fr,nom_en,description_fr,description_en,marque,prix_detail,prix_promo,prix_semi_gros,prix_gros,taille,couleur,parfum,stock,nouveau,populaire,statut
+OS-P00100,Vêtements,Robe midi élégante,Elegant midi dress,Une robe midi élégante pour toutes les occasions.,An elegant midi dress for every occasion.,OpenStyle,25000,,22000,20000,S,Noir,,5,oui,non,publie
+OS-P00100,Vêtements,,,,,,,,,,M,Noir,,8,,,
+OS-P00100,Vêtements,,,,,,,,,,L,Noir,,3,,,

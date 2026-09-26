@@ -62,9 +62,14 @@ export default async function AdminProductsPage({
         title="Produits"
         breadcrumbs={[{ label: "Accueil", href: "/admin" }, { label: "Produits" }]}
         actions={
-          <a href="/admin/produits/nouveau" className="bg-os-black px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white">
-            + Produit
-          </a>
+          <div className="flex gap-2">
+            <a href="/admin/produits/import" className="border border-os-black px-4 py-2 text-xs font-semibold uppercase tracking-wide hover:bg-os-black hover:text-white">
+              Importer
+            </a>
+            <a href="/admin/produits/nouveau" className="bg-os-black px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white">
+              + Produit
+            </a>
+          </div>
         }
       />
 

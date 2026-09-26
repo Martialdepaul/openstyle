@@ -6,33 +6,12 @@ import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { getShopSettings } from "@/lib/shop-settings";
 import { computeProductInStock } from "@/lib/stock";
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+import { generateUniqueSlug } from "@/lib/slug";
 
 /** F14 : référence générée automatiquement si vide, format OS-P00001. */
 async function generateReference() {
   const count = await prisma.product.count();
   return `OS-P${String(count + 1).padStart(5, "0")}`;
-}
-
-/** F14 : le slug est généré à partir du nom et reste unique. */
-async function generateUniqueSlug(base: string) {
-  const root = slugify(base) || "produit";
-  let slug = root;
-  let suffix = 1;
-  // Le jeu de produits reste petit : une boucle simple suffit, pas besoin de requête d'unicité optimisée.
-  while (await prisma.product.findUnique({ where: { slug } })) {
-    suffix += 1;
-    slug = `${root}-${suffix}`;
-  }
-  return slug;
 }
 
 export async function createProduct(formData: FormData) {
