@@ -60,9 +60,7 @@ async function PagesTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs text-os-muted">
-        Ces pages seront affichées sur la boutique une fois F10 construit. En attendant, le contenu est déjà enregistrable ici.
-      </p>
+      <p className="text-xs text-os-muted">Ces pages sont affichées sur la boutique publique (lien « Voir sur le site » sur chacune).</p>
       {CONTENT_PAGES.map(({ slug, label }) => {
         const existing = bySlug.get(slug);
         return (
@@ -88,6 +86,9 @@ async function FaqTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      <a href="/fr/faq" target="_blank" rel="noreferrer" className="w-fit text-xs underline">
+        Voir sur le site
+      </a>
       <section className="max-w-2xl border border-os-gray bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest">Nouvelle question</h2>
         <form action={createFaqItem} className="grid grid-cols-1 gap-4 sm:grid-cols-2">

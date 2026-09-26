@@ -13,7 +13,18 @@ export default function PageContentForm({ slug, label, initial }: { slug: string
 
   return (
     <details className="border border-os-gray bg-white p-6">
-      <summary className="cursor-pointer text-sm font-semibold uppercase tracking-widest">{label}</summary>
+      <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold uppercase tracking-widest">
+        {label}
+        <a
+          href={`/fr/${slug}`}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs font-normal normal-case underline"
+        >
+          Voir sur le site
+        </a>
+      </summary>
       <form action={updateWithSlug} className="mt-4 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
