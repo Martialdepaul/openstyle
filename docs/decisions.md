@@ -274,7 +274,7 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Décisions :**
 
-- **CSV uniquement pour l'instant, XLSX reporté.** Écrire un analyseur CSV maison (`lib/csv-import.ts`, testé) était trivial ; XLSX est un format binaire (zip + XML) qui demanderait une dépendance supplémentaire (`xlsx`/SheetJS) — reporté pour limiter le risque sur cette machine de développement (installations très lentes, voir plus haut dans ce journal). Le modèle téléchargeable (`public/modele-import-produits.csv`) et le formulaire n'acceptent que `.csv`.
+- **CSV et XLSX pris en charge.** CSV via un analyseur maison (`lib/csv-import.ts`, testé) ; XLSX via `lib/xlsx-import.ts` (dépendance `xlsx`/SheetJS, ajoutée après coup une fois le reste de F15 stabilisé). Les deux formats produisent le même tableau de lignes en mémoire, puis suivent exactement la même validation — aucune duplication de logique entre les deux formats. Le fichier XLSX est envoyé du navigateur au serveur en base64 (les actions serveur ne transportent que des données sérialisables ; un `File`/`ArrayBuffer` binaire ne s'y prête pas directement). Le modèle téléchargeable (`public/modele-import-produits.csv`) reste au format CSV, ouvrable tel quel dans Excel.
 - **Upload de photos en lot non fait** : F14 (stockage d'images) n'est pas branché — aucune photo n'est stockée nulle part actuellement, donc rattacher des fichiers `REFERENCE-1.jpg` n'aurait rien à faire. À reprendre avec F14.
 - **Pas d'aperçu écrit en base** (critère d'acceptation) : `previewImport` ne fait que lire (produits existants par référence, catégories) — les lignes validées restent en mémoire côté navigateur (état React) entre l'aperçu et la confirmation, pas de table de travail en base. Plus simple qu'une table `ImportJob`, au prix de renvoyer le tableau complet des lignes à chaque lot (acceptable : opération d'admin peu fréquente, pas un chemin à fort trafic).
 - **Lots de 200 *produits* (regroupements), pas 200 lignes brutes** : découper par ligne brute risquerait de couper les variantes d'un même produit entre deux lots. Interprétation pragmatique du texte, qui reste cohérente avec l'esprit (éviter qu'un import dépasse le délai d'une fonction serveur) sans risquer une écriture partielle d'un produit.
@@ -283,7 +283,7 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 - **Cellule vide = valeur inchangée**, au sens strict : pour un produit existant (mise à jour), un prix/stock/statut vide n'est jamais écrit ; pour une création, vide prend un défaut neutre (`null` pour les prix optionnels, `false` pour nouveau/populaire, `DRAFT` pour le statut, `0` pour le stock). Chaque stock importé (création de variante ou changement de quantité) crée un `StockMovement` de raison `IMPORT` ; une cellule stock vide ne crée aucun mouvement.
 - Réservé à OWNER et MANAGER, comme la gestion des produits (section 4).
 
-**Impact.** F15 fait pour la partie obligatoire (import de données CSV). XLSX et l'upload de photos en lot restent à faire — le second dépend de F14 (stockage d'images).
+**Impact.** F15 fait, CSV et XLSX compris. Reste : l'upload de photos en lot, qui dépend de F14 (stockage d'images).
 
 ## E-mails (F24)
 

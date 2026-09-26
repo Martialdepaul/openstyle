@@ -3,8 +3,20 @@
 import { useState } from "react";
 import { previewImport, processImportBatch, type ImportPreview } from "@/lib/actions/product-import";
 
+/** Base64 par blocs : évite un dépassement de pile sur un gros fichier avec String.fromCharCode(...bytes). */
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 /**
- * F15 : import CSV en deux temps — aperçu (rien n'est écrit) puis
+ * F15 : import CSV ou XLSX en deux temps — aperçu (rien n'est écrit) puis
  * confirmation, traitée par lots de 200 produits avec barre de progression
  * (chaque lot est un appel serveur séparé, pour rester sous le délai de la
  * fonction serveur même sur un fichier de plusieurs centaines de lignes).
@@ -26,8 +38,10 @@ export default function ProductImportWizard() {
     setDone(false);
     setIsAnalyzing(true);
 
-    const text = await file.text();
-    const result = await previewImport(text);
+    const isXlsx = /\.xlsx$/i.test(file.name);
+    const result = isXlsx
+      ? await previewImport({ kind: "xlsx", base64: await fileToBase64(file) })
+      : await previewImport({ kind: "csv", text: await file.text() });
     setIsAnalyzing(false);
 
     if (result.error) setError(result.error);
@@ -59,13 +73,19 @@ export default function ProductImportWizard() {
       <section className="max-w-xl border border-os-gray bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest">1. Choisir un fichier</h2>
         <p className="mb-3 text-xs text-os-muted">
-          Fichier CSV uniquement (XLSX pas encore pris en charge).{" "}
+          Fichier CSV ou XLSX (Excel).{" "}
           <a href="/modele-import-produits.csv" download className="underline">
             Télécharger le modèle
           </a>
           .
         </p>
-        <input type="file" accept=".csv,text/csv" onChange={handleFileChange} disabled={isAnalyzing} className="text-sm" />
+        <input
+          type="file"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          onChange={handleFileChange}
+          disabled={isAnalyzing}
+          className="text-sm"
+        />
         {isAnalyzing && <p className="mt-2 text-xs text-os-muted">Analyse en cours…</p>}
       </section>
 

@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { parseCsv } from "@/lib/csv-import";
+import { parseXlsxBase64 } from "@/lib/xlsx-import";
 import { generateUniqueSlug } from "@/lib/slug";
 import { getShopSettings } from "@/lib/shop-settings";
 import { computeProductInStock } from "@/lib/stock";
@@ -11,12 +12,13 @@ import { maybeSendLowStockAlert } from "@/lib/low-stock-alert";
 import type { Prisma, ProductStatus } from "@/generated/prisma/client";
 
 /**
- * F15 : import de produits en lot. Une ligne par variante ; les lignes
- * partageant la même référence forment un seul produit. XLSX pas encore
- * pris en charge (CSV seulement) — voir docs/decisions.md. Les photos en
- * lot (REFERENCE-1.jpg) ne sont pas construites : F14 (stockage d'images)
- * n'est pas encore branché.
+ * F15 : import de produits en lot (CSV ou XLSX). Une ligne par variante ;
+ * les lignes partageant la même référence forment un seul produit. Les
+ * photos en lot (REFERENCE-1.jpg) ne sont pas construites : F14 (stockage
+ * d'images) n'est pas encore branché.
  */
+
+export type ImportFileInput = { kind: "csv"; text: string } | { kind: "xlsx"; base64: string };
 
 const REQUIRED_HEADERS = [
   "reference",
@@ -78,8 +80,13 @@ export type ImportPreview = {
   groups: ImportProductGroup[];
 };
 
-function toRawRows(csvText: string): { rows: RawRow[]; error?: string } {
-  const table = parseCsv(csvText);
+function toRawRows(input: ImportFileInput): { rows: RawRow[]; error?: string } {
+  let table: string[][];
+  try {
+    table = input.kind === "csv" ? parseCsv(input.text) : parseXlsxBase64(input.base64);
+  } catch {
+    return { rows: [], error: "Fichier illisible. Vérifiez qu'il s'agit bien d'un fichier CSV ou XLSX valide." };
+  }
   if (table.length === 0) return { rows: [], error: "Fichier vide." };
 
   const headerRow = table[0].map((h) => h.trim().toLowerCase());
@@ -119,10 +126,10 @@ function parseStatus(raw: string): ProductStatus | null {
 }
 
 /** F15 : prévisualisation — rien n'est écrit en base ici. */
-export async function previewImport(csvText: string): Promise<ImportPreview> {
+export async function previewImport(input: ImportFileInput): Promise<ImportPreview> {
   await requireRole("OWNER", "MANAGER");
 
-  const { rows, error } = toRawRows(csvText);
+  const { rows, error } = toRawRows(input);
   if (error) return { error, totalRows: 0, toCreate: 0, toUpdate: 0, errors: [], groups: [] };
 
   const errors: ImportRowError[] = [];
