@@ -5,6 +5,9 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
+import PasswordResetEmail from "@/emails/PasswordResetEmail";
 import type { Role } from "@/generated/prisma/client";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure, même durée que F08.
@@ -19,12 +22,25 @@ async function activeOwnerCount(excludeUserId?: string): Promise<number> {
   });
 }
 
+/** F24 (E7) : lien de réinitialisation envoyé par e-mail (route publique, toujours en FR pour un compte admin). */
+async function sendResetLinkEmail(email: string, userId: string): Promise<void> {
+  const token = crypto.randomBytes(32).toString("hex");
+  await prisma.passwordResetToken.create({
+    data: { userId, token, expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) },
+  });
+  const resetUrl = `${getSiteUrl()}/fr/reinitialiser-mot-de-passe/${token}`;
+  await sendEmail({
+    to: email,
+    subject: "Réinitialisation du mot de passe",
+    react: <PasswordResetEmail locale="fr" resetUrl={resetUrl} />,
+  });
+}
+
 /**
  * F12 : création d'un compte OWNER/MANAGER. Aucun mot de passe n'est
  * transmis en clair : un mot de passe aléatoire inutilisable est généré,
- * puis un lien de réinitialisation est journalisé (même limite que F08,
- * Resend non branché — voir docs/decisions.md), pour que le nouvel admin
- * choisisse lui-même son mot de passe.
+ * puis un lien de réinitialisation est envoyé par e-mail (F24, E7) pour que
+ * le nouvel admin choisisse lui-même son mot de passe.
  */
 export async function createAdminAccount(formData: FormData): Promise<void> {
   const session = await requireRole("OWNER");
@@ -57,11 +73,7 @@ export async function createAdminAccount(formData: FormData): Promise<void> {
     data: { userId: session.user.id, action: "ADMIN_CREATED", entity: "User", entityId: user.id },
   });
 
-  const token = crypto.randomBytes(32).toString("hex");
-  await prisma.passwordResetToken.create({
-    data: { userId: user.id, token, expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) },
-  });
-  console.log(`[F12] Compte admin créé pour ${email} — lien pour choisir un mot de passe (valable 1h) : /fr/reinitialiser-mot-de-passe/${token}`);
+  await sendResetLinkEmail(email, user.id);
 
   revalidatePath("/admin/equipe");
 }
@@ -125,11 +137,7 @@ export async function sendAdminResetLink(userId: string): Promise<{ error?: stri
   const target = await prisma.user.findUnique({ where: { id: userId } });
   if (!target || !isAdminRole(target.role)) return { error: "Compte introuvable." };
 
-  const token = crypto.randomBytes(32).toString("hex");
-  await prisma.passwordResetToken.create({
-    data: { userId: target.id, token, expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) },
-  });
-  console.log(`[F12] Lien de réinitialisation pour ${target.email} (valable 1h) : /fr/reinitialiser-mot-de-passe/${token}`);
+  await sendResetLinkEmail(target.email, target.id);
 
   return {};
 }

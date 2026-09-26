@@ -11,6 +11,11 @@ import { availableDeliveryMethods, deliveryFee } from "@/lib/delivery";
 import { findZoneForCity } from "@/lib/delivery-zones";
 import { isValidCameroonPhone, normalizeCameroonPhone } from "@/lib/orders";
 import { generateOrderNumber } from "@/lib/order-number";
+import { getShopSettings } from "@/lib/shop-settings";
+import { getSiteUrl } from "@/lib/site-url";
+import { sendEmail, sendOrderEmail } from "@/lib/email";
+import NewOrderNotificationEmail from "@/emails/NewOrderNotificationEmail";
+import OrderStatusEmail from "@/emails/OrderStatusEmail";
 import type { DeliveryMethod } from "@/generated/prisma/client";
 
 export type CheckoutState = { error: string | null; problemSlugs?: string[] };
@@ -186,9 +191,37 @@ export async function createOrder(_prevState: CheckoutState, formData: FormData)
       items: { create: items },
       events: { create: [{ type: "STATUS_CHANGE", toStatus: "NEW", note: "Commande créée" }] },
     },
+    include: { items: true },
   });
 
-  // E1 (confirmation par e-mail) nécessite Resend, non branché à ce stade — voir docs/decisions.md.
+  const siteUrl = getSiteUrl();
+  const shopSettings = await getShopSettings();
+
+  // E2 : toujours envoyé à la boutique.
+  await sendEmail({
+    to: shopSettings.orderNotificationEmail,
+    subject: `Nouvelle commande ${order.number}`,
+    react: <NewOrderNotificationEmail order={order} siteUrl={siteUrl} />,
+  });
+
+  // E1 : seulement si le client a laissé un e-mail (RG-07).
+  if (order.email) {
+    await sendOrderEmail({
+      orderId: order.id,
+      to: order.email,
+      code: "E1",
+      subject: locale === "en" ? `Order ${order.number} received` : `Commande ${order.number} reçue`,
+      react: (
+        <OrderStatusEmail
+          locale={locale === "en" ? "en" : "fr"}
+          variant="received"
+          firstName={order.firstName}
+          order={order}
+          siteUrl={siteUrl}
+        />
+      ),
+    });
+  }
 
   return redirect({
     href: { pathname: "/commande/confirmation/[numero]", params: { numero: order.number } },

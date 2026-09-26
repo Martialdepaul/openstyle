@@ -7,6 +7,7 @@ import { parseCsv } from "@/lib/csv-import";
 import { generateUniqueSlug } from "@/lib/slug";
 import { getShopSettings } from "@/lib/shop-settings";
 import { computeProductInStock } from "@/lib/stock";
+import { maybeSendLowStockAlert } from "@/lib/low-stock-alert";
 import type { Prisma, ProductStatus } from "@/generated/prisma/client";
 
 /**
@@ -226,10 +227,14 @@ export async function processImportBatch(groups: ImportProductGroup[], offset: n
 
   try {
     for (const group of batch) {
-      if (group.isUpdate && group.existingProductId) {
-        await updateImportedProduct(group, group.existingProductId, session.user.id, defaultLowStockThreshold);
-      } else {
-        await createImportedProduct(group, session.user.id, defaultLowStockThreshold);
+      const lowStockChecks =
+        group.isUpdate && group.existingProductId
+          ? await updateImportedProduct(group, group.existingProductId, session.user.id, defaultLowStockThreshold)
+          : await createImportedProduct(group, session.user.id, defaultLowStockThreshold);
+
+      // F24 (E8) : hors transaction (appel réseau), une variante mise à jour à la fois.
+      for (const check of lowStockChecks) {
+        await maybeSendLowStockAlert(check.variantId, check.previousStock, check.newStock, check.threshold);
       }
     }
   } catch (error) {
@@ -243,7 +248,8 @@ export async function processImportBatch(groups: ImportProductGroup[], offset: n
   return { processed, total: groups.length, done };
 }
 
-async function createImportedProduct(group: ImportProductGroup, userId: string, defaultLowStockThreshold: number): Promise<void> {
+// RG-24/F24 : pas d'alerte de stock bas à la création — il n'y a pas de "précédent" à faire chuter, seulement un choix initial de stock.
+async function createImportedProduct(group: ImportProductGroup, userId: string, defaultLowStockThreshold: number): Promise<LowStockCheck[]> {
   const slug = await generateUniqueSlug(group.nameFr);
 
   await prisma.$transaction(async (tx) => {
@@ -286,14 +292,20 @@ async function createImportedProduct(group: ImportProductGroup, userId: string, 
       }
     }
   });
+
+  return [];
 }
+
+type LowStockCheck = { variantId: string; previousStock: number; newStock: number; threshold: number };
 
 async function updateImportedProduct(
   group: ImportProductGroup,
   productId: string,
   userId: string,
   defaultLowStockThreshold: number,
-): Promise<void> {
+): Promise<LowStockCheck[]> {
+  const lowStockChecks: LowStockCheck[] = [];
+
   await prisma.$transaction(async (tx) => {
     // RG (F15) : une cellule vide ne doit jamais écraser un prix existant — omis du update plutôt que mis à null.
     const data: Prisma.ProductUncheckedUpdateInput = {
@@ -330,6 +342,7 @@ async function updateImportedProduct(
           if (delta !== 0) {
             await tx.variant.update({ where: { id: match.id }, data: { stock: newStock } });
             await tx.stockMovement.create({ data: { variantId: match.id, delta, reason: "IMPORT", userId } });
+            lowStockChecks.push({ variantId: match.id, previousStock: match.stock, newStock, threshold: match.lowStockThreshold });
           }
         }
         // Cellule stock vide : le stock existant reste inchangé, aucun mouvement créé.
@@ -355,4 +368,6 @@ async function updateImportedProduct(
     const refreshedVariants = await tx.variant.findMany({ where: { productId, isActive: true }, select: { stock: true } });
     await tx.product.update({ where: { id: productId }, data: { inStock: computeProductInStock(refreshedVariants.map((v) => v.stock)) } });
   });
+
+  return lowStockChecks;
 }

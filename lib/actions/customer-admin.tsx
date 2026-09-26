@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import ProAccountDecisionEmail from "@/emails/ProAccountDecisionEmail";
 
 /**
- * F19 : validation d'une demande de compte pro. L'e-mail qui informe le
- * client (F09) nécessite Resend, non branché à ce stade — voir
- * docs/decisions.md ; journalisé côté serveur en attendant.
+ * F19 : validation d'une demande de compte pro. F24 (E6) : e-mail envoyé au
+ * client, dans sa langue — jamais bloquant si l'envoi échoue.
  */
 export async function approveProRequest(userId: string): Promise<void> {
   const session = await requireRole("OWNER");
@@ -19,7 +20,11 @@ export async function approveProRequest(userId: string): Promise<void> {
   await prisma.adminLog.create({
     data: { userId: session.user.id, action: "PRO_APPROVED", entity: "User", entityId: userId },
   });
-  console.log(`[F09] Compte pro validé pour ${user.email} (e-mail non envoyé, Resend non branché).`);
+  await sendEmail({
+    to: user.email,
+    subject: user.locale === "en" ? "Your pro account request has been approved" : "Votre demande de compte pro a été validée",
+    react: <ProAccountDecisionEmail locale={user.locale === "en" ? "en" : "fr"} firstName={user.firstName} approved />,
+  });
 
   revalidatePath("/admin/clients");
   revalidatePath(`/admin/clients/${userId}`);
@@ -35,7 +40,11 @@ export async function rejectProRequest(userId: string): Promise<void> {
   await prisma.adminLog.create({
     data: { userId: session.user.id, action: "PRO_REJECTED", entity: "User", entityId: userId },
   });
-  console.log(`[F09] Compte pro refusé pour ${user.email} (e-mail non envoyé, Resend non branché).`);
+  await sendEmail({
+    to: user.email,
+    subject: user.locale === "en" ? "Your pro account request has been declined" : "Votre demande de compte pro a été refusée",
+    react: <ProAccountDecisionEmail locale={user.locale === "en" ? "en" : "fr"} firstName={user.firstName} approved={false} />,
+  });
 
   revalidatePath("/admin/clients");
   revalidatePath(`/admin/clients/${userId}`);

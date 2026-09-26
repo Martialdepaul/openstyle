@@ -4,6 +4,9 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { redirect } from "@/i18n/navigation";
+import { sendEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
+import PasswordResetEmail from "@/emails/PasswordResetEmail";
 
 export type ResetRequestState = { sent: boolean };
 export type ResetPasswordState = { error: string | null };
@@ -11,11 +14,8 @@ export type ResetPasswordState = { error: string | null };
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure (F08)
 
 /**
- * F08 : mot de passe oublié. Le message renvoyé est identique que l'e-mail
- * existe ou non (ne révèle jamais si une adresse est inscrite). Resend
- * n'étant pas branché (voir docs/decisions.md), le lien est journalisé côté
- * serveur au lieu d'être envoyé par e-mail — mécanisme réel, livraison
- * simulée.
+ * F08, F24 (E7) : mot de passe oublié. Le message renvoyé est identique que
+ * l'e-mail existe ou non (ne révèle jamais si une adresse est inscrite).
  */
 export async function requestPasswordReset(_prevState: ResetRequestState, formData: FormData): Promise<ResetRequestState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -29,8 +29,12 @@ export async function requestPasswordReset(_prevState: ResetRequestState, formDa
         data: { userId: user.id, token, expiresAt: new Date(Date.now() + TOKEN_TTL_MS) },
       });
       const path = locale === "en" ? "reset-password" : "reinitialiser-mot-de-passe";
-      // E-mail non envoyé (Resend pas branché) : lien journalisé pour rester testable manuellement.
-      console.log(`[F08] Lien de réinitialisation pour ${email} (valable 1h) : /${locale}/${path}/${token}`);
+      const resetUrl = `${getSiteUrl()}/${locale}/${path}/${token}`;
+      await sendEmail({
+        to: email,
+        subject: locale === "en" ? "Reset your password" : "Réinitialisation du mot de passe",
+        react: <PasswordResetEmail locale={locale} resetUrl={resetUrl} />,
+      });
     }
   }
 

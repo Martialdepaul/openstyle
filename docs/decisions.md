@@ -86,28 +86,28 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 - ~~Le palier de prix est toujours `RETAIL`~~ — mis à jour avec F08/F09 : le palier dépend désormais du statut pro réel du client connecté (voir plus bas).
 - Zones de livraison : le découpage (Yaoundé ; Douala, Edéa, Bafoussam, Kribi, Limbé ; Autres villes) vient directement de F20 ; les frais restent à 0 tant que la gérante ne les a pas saisis (F20, pas encore construit), conformément au texte reçu. Points relais : 2 points de démonstration à Yaoundé (`prisma/seed.ts`), coordonnées factices en attendant F20.
 - Liste des villes du formulaire : liste indicative des villes principales du Cameroun avec saisie libre en repli (« Autre »), pas de source officielle fournie.
-- L'e-mail E1 (confirmation) n'est pas envoyé : Resend n'est pas encore configuré. La commande est créée normalement, seul l'envoi d'e-mail est un no-op documenté dans `lib/actions/order.ts`.
-- RG-15 (limite de débit par IP) : compteur en mémoire dans `lib/actions/order.ts`, propre à l'instance de serveur — suffisant en développement mono-instance, à remplacer par un magasin partagé (Upstash/Redis) avant une mise en ligne multi-instance.
+- ~~L'e-mail E1 (confirmation) n'est pas envoyé : Resend n'est pas encore configuré.~~ Fait depuis (F24, voir plus bas) : E1 part réellement si le client a laissé un e-mail, E2 part toujours à la boutique.
+- RG-15 (limite de débit par IP) : compteur en mémoire dans `lib/actions/order.tsx`, propre à l'instance de serveur — suffisant en développement mono-instance, à remplacer par un magasin partagé (Upstash/Redis) avant une mise en ligne multi-instance.
 - « Un double clic ne crée pas deux commandes » : le bouton d'envoi se désactive pendant la soumission (`useFormStatus`), sans clé d'idempotence en base. Suffisant pour un usage normal (un seul clic physique) ; deux requêtes strictement simultanées depuis deux onglets resteraient possibles mais hors du scénario visé par le critère d'acceptation.
 
-**Impact.** À revoir quand F08/F09 (comptes pro), F20 (livraison) et Resend seront construits.
+**Impact.** F08/F09/F20 faits depuis. Resend fait depuis (F24, voir plus bas).
 
 ## Comptes clients (F08), compte professionnel (F09), admin clients (F19)
 
-**Constat.** Ces trois fonctionnalités sont liées (F19 n'a de vraies données qu'avec F08/F09) et dépendent toutes de Resend (non branché) pour les e-mails prévus par le texte (confirmation d'inscription implicite, lien de réinitialisation, notification de validation/refus pro).
+**Constat.** Ces trois fonctionnalités sont liées (F19 n'a de vraies données qu'avec F08/F09) et dépendaient toutes de Resend pour les e-mails prévus par le texte (lien de réinitialisation, notification de validation/refus pro) — Resend est branché depuis (F24, voir plus bas), ces e-mails partent réellement désormais.
 
 **Décisions :**
 
 - Chemins localisés (aucun exemple donné par F01) : `/inscription` (`/register`), `/connexion` (`/login`), `/compte` (`/account`), `/compte/commandes/[numero]` (`/account/orders/[numero]`), `/mot-de-passe-oublie` (`/forgot-password`), `/reinitialiser-mot-de-passe/[token]` (`/reset-password/[token]`).
 - Connexion par e-mail (pas « téléphone ou e-mail » comme le suggère l'export Figma Make) : le téléphone est facultatif à l'inscription, l'e-mail est le seul identifiant garanti présent.
 - Un seul fournisseur d'identifiants (Auth.js) sert l'admin et l'espace client ; `lib/admin-auth.ts` (`requireRole`) et `lib/customer-auth.ts` (`requireCustomerSession`) filtrent chacun par rôle à l'entrée de leur zone. Un compte OWNER/MANAGER ne peut pas atteindre `/compte` avec ses propres données affichées comme celles d'un client (redirigé vers `/connexion`) ; un compte CUSTOMER ne peut pas atteindre `/admin` (`forbidden()`).
-- Mot de passe oublié : le mécanisme est réel (jeton à usage unique, valable 1 heure, en base), mais l'e-mail n'est pas envoyé (Resend non branché) — le lien est journalisé côté serveur (`console.log`) pour rester testable manuellement. Même limite pour l'e-mail de validation/refus pro (F09).
+- Mot de passe oublié : le mécanisme est réel (jeton à usage unique, valable 1 heure, en base) ; l'e-mail part réellement depuis F24 (E7). Même chose pour l'e-mail de validation/refus pro (F09, E6).
 - Limite de tentatives de connexion (RG F08) : compteur en mémoire par e-mail dans `lib/auth.ts` (5 tentatives / 15 minutes), même mécanisme que les autres limites de débit du projet (RG-15, F07) — pas de magasin partagé, à revoir avant une mise en ligne multi-instance.
 - RG-03 réellement appliquée depuis ce lot : le palier d'une commande dépend du statut pro du compte connecté (`proStatus = APPROVED`) au moment de la commande, plus la quantité totale. Un visiteur ou un client détail garde toujours le prix de détail.
 - **Reste hors de ce lot (F09)** : l'affichage du tableau de paliers sur la fiche produit et le panier pour un compte pro validé (F04/F05/F06, critère RG-06 sur l'absence de prix de gros dans le HTML servi à un visiteur — déjà respecté aujourd'hui puisque ces prix ne sont affichés nulle part encore, mais l'affichage réel pour un pro reste à construire). Le lien « Devenir client pro » renvoie vers `/inscription` (case à cocher) partout, y compris pour un visiteur déjà connecté — pas encore de variante « demande depuis le compte » pré-remplie.
 - F19 : liste des clients et onglet « Demandes pro » avec recherche, validation/refus créant un `AdminLog` (`PRO_APPROVED`/`PRO_REJECTED`/`PRO_REVERTED`). Réservé à l'OWNER, comme prévu par la section 8.1.
 
-**Impact.** À corriger dès que Resend est branché (e-mails F08/F09/E1-E3) ; à compléter avec l'affichage des tarifs de palier une fois F04/F05/F06 repris pour les comptes pro.
+**Impact.** E-mails F08/F09/E1-E3 faits depuis (F24). Reste à compléter : l'affichage des tarifs de palier une fois F04/F05/F06 repris pour les comptes pro.
 
 ## Commandes (F18), portée de ce lot
 
@@ -115,7 +115,7 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 **Décision.** Ce lot construit : liste avec recherche/filtres/tri, fiche détail (lignes avec lien produit, livraison, historique non modifiable), changement de statut réel avec RG-09/10/12 (transitions autorisées, décompte du stock à la confirmation avec refus propre si stock insuffisant, remise en stock à l'annulation après confirmation), tentative de contact (RG-13), état du paiement (RG-16), note interne. La modification des lignes et le reçu imprimable sont reportés.
 
-**Impact.** RG-11 faite depuis (voir la section dédiée plus bas). Reste : le reçu imprimable. Les e-mails de suivi (E2/E3) ne partent pas : Resend n'est pas branché (même limite que F06).
+**Impact.** RG-11 et le reçu imprimable faits depuis (voir les sections dédiées plus bas). Les e-mails de suivi (E3/E4/E5) partent réellement depuis F24.
 
 ## Modification des lignes d'une commande NEW (RG-11)
 
@@ -212,7 +212,7 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 
 - Migration additive `20260925215103_add_user_is_active` : `User.isActive Boolean @default(true)`. Colonne avec valeur par défaut, aucune donnée existante affectée ; appliquée directement à la base Neon partagée dev/prod (voir la mise en garde plus haut sur cette base commune).
 - `lib/auth.ts` : un compte désactivé (`isActive = false`) ne peut plus se connecter (traité comme un mot de passe invalide, sans révéler la raison).
-- `/admin/equipe` (`lib/actions/team.ts`), réservé à l'OWNER : création de compte OWNER/MANAGER (mot de passe aléatoire jamais transmis, un lien de réinitialisation est journalisé côté serveur à la place d'un envoi par e-mail — Resend non branché, même limite que F08), changement de rôle, activation/désactivation, envoi d'un lien de réinitialisation à la demande. Un OWNER ne peut pas se désactiver lui-même ni retirer/désactiver le dernier OWNER actif (vérifié côté serveur, pas seulement caché dans l'interface).
+- `/admin/equipe` (`lib/actions/team.tsx`), réservé à l'OWNER : création de compte OWNER/MANAGER (mot de passe aléatoire jamais transmis, un lien de réinitialisation part réellement par e-mail depuis F24), changement de rôle, activation/désactivation, envoi d'un lien de réinitialisation à la demande. Un OWNER ne peut pas se désactiver lui-même ni retirer/désactiver le dernier OWNER actif (vérifié côté serveur, pas seulement caché dans l'interface).
 - **Limite acceptée** : le lien de réinitialisation envoyé depuis l'équipe pointe vers la page publique `/[locale]/reinitialiser-mot-de-passe/[token]` (mécanisme partagé avec F08), qui redirige ensuite vers `/connexion` (espace client) plutôt que `/admin/login`. Le mot de passe est bien mis à jour ; seul le renvoi post-soumission est celui du client, pas de l'admin. À corriger si gênant en pratique (redirection conditionnelle au rôle).
 - `/admin/journal` (F12, S) : liste paginée de `AdminLog` (auteur, action, entité concernée), les 9 types d'action existants (exports, décisions pro, création/désactivation/changement de rôle d'un compte admin) traduits en français. Lecture seule, réservé à l'OWNER.
 
@@ -284,6 +284,23 @@ Journal des points non couverts par le cahier des charges (ou couverts par un do
 - Réservé à OWNER et MANAGER, comme la gestion des produits (section 4).
 
 **Impact.** F15 fait pour la partie obligatoire (import de données CSV). XLSX et l'upload de photos en lot restent à faire — le second dépend de F14 (stockage d'images).
+
+## E-mails (F24)
+
+**Constat.** Jusqu'ici, tous les envois d'e-mails prévus par le texte (E1-E8, section 9) étaient des no-op documentés (lien journalisé côté serveur ou simple commentaire) faute de compte Resend. La cliente a fourni une vraie clé API Resend en cours de session.
+
+**Décisions :**
+
+- **Stack conforme à la section 3** : Resend + React Email. `@react-email/components` (que j'ai d'abord installé) s'est révélé marqué "no longer supported" sur npm au moment de l'installation — les composants ont été fusionnés dans le paquet `react-email` lui-même (confirmé par une recherche web) ; retiré aussitôt, tous les gabarits importent leurs composants (`Html`, `Body`, `Button`, etc.) depuis `react-email` directement.
+- `lib/email.ts` : `sendEmail()` générique (jamais d'exception, retente une fois en cas d'échec, comme l'exige la section 9), `sendOrderEmail()` qui journalise en plus le résultat comme événement `EMAIL_SENT` sur la commande concernée (visible dans `/admin/commandes/[id]`, critère d'acceptation explicite).
+- **Adresse d'expédition** : `onboarding@resend.dev` (bac à sable Resend), car aucun nom de domaine n'est vérifié dans le compte Resend de la cliente. **Limite importante à connaître** : dans cet état, Resend n'autorise l'envoi qu'à l'adresse e-mail du compte Resend lui-même (protection anti-abus standard des fournisseurs d'e-mail transactionnel) — aucun e-mail n'atteindra un vrai client tant qu'un nom de domaine n'est pas ajouté et vérifié dans Resend (enregistrements DNS). Le code est fonctionnellement complet ; seule la livraison réelle est bloquée par ce réglage externe.
+- **E-mails envoyés hors transaction Prisma** : un appel réseau (Resend) ne doit jamais tenir une transaction de base de données ouverte. Dans `lib/actions/order-status.tsx`, la commande mise à jour et les vérifications de stock bas sont capturées pendant la transaction puis les e-mails/alertes sont envoyés juste après, une fois la transaction validée.
+- **Fichiers renommés `.ts` → `.tsx`** partout où un envoi d'e-mail est déclenché (JSX du gabarit inline) : `lib/actions/order.tsx`, `order-status.tsx`, `customer-admin.tsx`, `password-reset.tsx`, `team.tsx`. `lib/actions/stock.ts` et `product-import.ts` restent `.ts` : ils appellent `maybeSendLowStockAlert()` (fonction, pas de JSX direct dans ces fichiers).
+- **E8 (stock bas), interprétation de « un seul par passage sous le seuil »** : comparaison de l'ancien ET du nouveau stock au seuil (`ancien ≥ seuil ET nouveau < seuil`), pas seulement le nouveau stock — sinon chaque mouvement supplémentaire sous le seuil réalerterait. Déclenché à la confirmation d'une commande (RG-10) et à une modification manuelle de stock (F17). **Pas d'alerte à la création d'un produit** (import ou création manuelle) : il n'y a pas de "précédent" à faire chuter, seulement un choix initial de stock assumé par l'admin.
+- Gabarits bilingues (E1/E3/E4/E5 client, E6/E7 selon `user.locale`/`order.locale`) ; E2 (notification boutique) et E8 (stock bas) sont en français uniquement, adressés à la gérante.
+- E1 et E3 partagent le même composant (`OrderStatusEmail`, `variant="received"|"confirmed"`), conformément au texte qui leur donne exactement le même contenu ; E4 (`ready`/`shipped`) et E5 (`cancelled`) réutilisent aussi ce composant pour rester cohérents (le texte ne détaille pas leur contenu, plus de contexte n'est pas un défaut).
+
+**Impact.** F24 fait, code complet pour les 8 e-mails. Reste : vérifier un nom de domaine dans Resend pour que les clients reçoivent réellement leurs e-mails (nécessite que la cliente possède un nom de domaine et ajoute les enregistrements DNS) ; ajouter `RESEND_API_KEY` aux variables d'environnement Vercel (fait en local dans `.env`, pas encore en production).
 
 ## Section "Suivez-nous" (grille Instagram) de la page d'accueil
 

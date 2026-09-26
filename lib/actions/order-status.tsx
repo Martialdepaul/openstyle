@@ -5,6 +5,10 @@ import { requireRole } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { canTransition } from "@/lib/orders";
 import { computeProductInStock, findStockShortages } from "@/lib/stock";
+import { sendOrderEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
+import { maybeSendLowStockAlert } from "@/lib/low-stock-alert";
+import OrderStatusEmail, { type OrderEmailVariant } from "@/emails/OrderStatusEmail";
 import type { OrderStatus, Prisma } from "@/generated/prisma/client";
 
 export type ChangeStatusState = { error: string | null };
@@ -17,15 +21,59 @@ async function recomputeInStock(tx: Prisma.TransactionClient, productIds: Iterab
   }
 }
 
+const STATUS_TO_EMAIL_VARIANT: Partial<Record<OrderStatus, OrderEmailVariant>> = {
+  CONFIRMED: "confirmed",
+  READY: "ready",
+  SHIPPED: "shipped",
+  CANCELLED: "cancelled",
+};
+
+const STATUS_EMAIL_CODE: Record<OrderEmailVariant, string> = {
+  received: "E1",
+  confirmed: "E3",
+  ready: "E4",
+  shipped: "E4",
+  cancelled: "E5",
+};
+
+const STATUS_EMAIL_SUBJECT: Record<OrderEmailVariant, { fr: (n: string) => string; en: (n: string) => string }> = {
+  received: { fr: (n) => `Commande ${n} reçue`, en: (n) => `Order ${n} received` },
+  confirmed: { fr: (n) => `Commande ${n} confirmée`, en: (n) => `Order ${n} confirmed` },
+  ready: { fr: (n) => `Commande ${n} prête`, en: (n) => `Order ${n} ready` },
+  shipped: { fr: (n) => `Commande ${n} expédiée`, en: (n) => `Order ${n} shipped` },
+  cancelled: { fr: (n) => `Commande ${n} annulée`, en: (n) => `Order ${n} cancelled` },
+};
+
+/** F24 (E3/E4/E5) : n'envoie que si le client a laissé un e-mail (RG-07). Jamais appelé dans la transaction (appel réseau). */
+async function sendStatusEmail(order: Prisma.OrderGetPayload<{ include: { items: true } }>, newStatus: OrderStatus): Promise<void> {
+  if (!order.email) return;
+  const variant = STATUS_TO_EMAIL_VARIANT[newStatus];
+  if (!variant) return;
+
+  const locale = order.locale === "en" ? "en" : "fr";
+  await sendOrderEmail({
+    orderId: order.id,
+    to: order.email,
+    code: STATUS_EMAIL_CODE[variant],
+    subject: STATUS_EMAIL_SUBJECT[variant][locale](order.number),
+    react: <OrderStatusEmail locale={locale} variant={variant} firstName={order.firstName} order={order} siteUrl={getSiteUrl()} />,
+  });
+}
+
 /**
  * F18 : changement de statut d'une commande. RG-09 (transitions autorisées),
  * RG-10 (décompte du stock à la confirmation, dans une transaction, refusé
  * si le stock est insuffisant), RG-12 (une annulation après confirmation
  * remet les quantités en stock). Chaque changement crée un `OrderEvent`
- * (historique jamais modifiable ni supprimable).
+ * (historique jamais modifiable ni supprimable). F24 : e-mail de suivi et
+ * alerte de stock bas envoyés après la transaction (jamais dans celle-ci —
+ * un appel réseau ne doit pas tenir la transaction ouverte).
  */
 export async function changeOrderStatus(orderId: string, newStatus: OrderStatus): Promise<ChangeStatusState> {
   const session = await requireRole("OWNER");
+
+  let emailOrder: Prisma.OrderGetPayload<{ include: { items: true } }> | null = null;
+  const lowStockChecks: Array<{ variantId: string; previousStock: number; newStock: number; threshold: number }> = [];
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -57,6 +105,12 @@ export async function changeOrderStatus(orderId: string, newStatus: OrderStatus)
               orderId: order.id,
               userId: session.user.id,
             },
+          });
+          lowStockChecks.push({
+            variantId: item.variantId,
+            previousStock: item.variant.stock,
+            newStock: item.variant.stock - item.quantity,
+            threshold: item.variant.lowStockThreshold,
           });
         }
         await tx.order.update({ where: { id: order.id }, data: { status: "CONFIRMED", confirmedAt: new Date() } });
@@ -90,7 +144,7 @@ export async function changeOrderStatus(orderId: string, newStatus: OrderStatus)
         },
       });
 
-      // E2/E3 (e-mails de suivi) nécessitent Resend, non branché à ce stade — voir docs/decisions.md.
+      emailOrder = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Erreur inconnue." };
@@ -101,6 +155,12 @@ export async function changeOrderStatus(orderId: string, newStatus: OrderStatus)
   revalidatePath("/admin");
   revalidatePath("/admin/produits");
   revalidatePath("/admin/stocks");
+
+  if (emailOrder) await sendStatusEmail(emailOrder, newStatus);
+  for (const check of lowStockChecks) {
+    await maybeSendLowStockAlert(check.variantId, check.previousStock, check.newStock, check.threshold);
+  }
+
   return { error: null };
 }
 
